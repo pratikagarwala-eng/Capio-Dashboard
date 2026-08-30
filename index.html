@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capio International Account Intelligence</title>
+<meta name="description" content="Signal enrichment across Capio International's Singapore enterprise portfolio: account prioritisation, device-refresh demand and AI-workplace readiness.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#00182F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#002B55" media="(prefers-color-scheme: light)">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="capio-mark.png" type="image/png">
+<link rel="apple-touch-icon" href="capio-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ================================================================
+   Capio International Account Intelligence — design tokens
+
+   The navy is Capio's own (#002B55, sampled from the logo mark) and
+   anchors the whole page; the red (#E81D26, the dot in the CAPiO "i")
+   is reserved for one job — marking device-refresh urgency, the
+   Windows-10 end-of-support wedge this portfolio is built around.
+   Every ordinal ramp below was checked for lightness monotonicity,
+   adjacent step size and light-end contrast in both themes.
+   ================================================================ */
+:root{
+  color-scheme:light;
+  /* brand */
+  --brand:#00447F; --brand-str:#002B55; --brand-lite:#0A6FBF; --brand-soft:#E7EFF7;
+  --accent:#D6151F; --accent-str:#A8121A; --accent-lite:#EE4B54; --accent-soft:#FCE9EA;
+  /* priority ordinal ramp (P0 strongest -> P3), unranked neutral */
+  --p0:#001427; --p1:#00396F; --p2:#0B67B2; --p3:#7DB4DF; --pu:#A7B0BA;
+  --p0-ink:#FFFFFF; --p1-ink:#FFFFFF; --p2-ink:#FFFFFF; --p3-ink:#04223B; --pu-ink:#141A20;
+  /* signal-family hues — four distinguishable families, not an ordinal ramp */
+  --fam0:#0B67B2; --fam1:#00806E; --fam2:#5B4BB8; --fam3:#9A6410;
+  --fam0-soft:#E7F0F8; --fam1-soft:#E2F2EF; --fam2-soft:#EDEAF8; --fam3-soft:#F6EFE2;
+  /* neutrals, biased a few degrees toward the brand hue */
+  --ink:#131A21; --ink-2:#45525E; --muted:#67757F;
+  --line:#E1E8EE; --line-2:#EDF2F6; --track:#E7EDF3;
+  --bg:#F4F7FA; --card:#FFFFFF; --card-2:#FAFCFD;
+  --mast:#002B55; --mast-2:#0A4076; --mast-3:#14548F; --mast-ink:#F2F7FB; --mast-mut:#93B2CF;
+  --shadow:0 1px 2px rgba(0,26,51,.05),0 6px 20px rgba(0,26,51,.07);
+  --shadow-lift:0 1px 2px rgba(0,26,51,.06),0 10px 30px rgba(0,26,51,.12);
+  --f:'Figtree','Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;
+  --fm:'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --brand:#4EA3E8; --brand-str:#8CC5F2; --brand-lite:#4EA3E8; --brand-soft:#0A2942;
+    --accent:#F2666D; --accent-str:#F79197; --accent-lite:#F79197; --accent-soft:#3B1114;
+    --p0:#A8D3F2; --p1:#6BAFE4; --p2:#2C7DC4; --p3:#0E4A82; --pu:#5A646E;
+    --p0-ink:#03192C; --p1-ink:#03192C; --p2-ink:#FFFFFF; --p3-ink:#FFFFFF; --pu-ink:#EDF2F6;
+    --fam0:#4EA3E8; --fam1:#3FBFA6; --fam2:#9B8CEA; --fam3:#D5A24A;
+    --fam0-soft:#0B2740; --fam1-soft:#08302B; --fam2-soft:#221D3D; --fam3-soft:#33260F;
+    --ink:#EDF2F6; --ink-2:#A6B3BE; --muted:#7F8D98;
+    --line:#27303A; --line-2:#1D242C; --track:#232B34;
+    --bg:#0E1216; --card:#171C22; --card-2:#1D232A;
+    --mast:#00182F; --mast-2:#0A2942; --mast-3:#123A5C; --mast-ink:#EDF2F6; --mast-mut:#7D95AC;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.34);
+    --shadow-lift:0 1px 2px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.44);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --brand:#4EA3E8; --brand-str:#8CC5F2; --brand-lite:#4EA3E8; --brand-soft:#0A2942;
+  --accent:#F2666D; --accent-str:#F79197; --accent-lite:#F79197; --accent-soft:#3B1114;
+  --p0:#A8D3F2; --p1:#6BAFE4; --p2:#2C7DC4; --p3:#0E4A82; --pu:#5A646E;
+  --p0-ink:#03192C; --p1-ink:#03192C; --p2-ink:#FFFFFF; --p3-ink:#FFFFFF; --pu-ink:#EDF2F6;
+  --fam0:#4EA3E8; --fam1:#3FBFA6; --fam2:#9B8CEA; --fam3:#D5A24A;
+  --fam0-soft:#0B2740; --fam1-soft:#08302B; --fam2-soft:#221D3D; --fam3-soft:#33260F;
+  --ink:#EDF2F6; --ink-2:#A6B3BE; --muted:#7F8D98;
+  --line:#27303A; --line-2:#1D242C; --track:#232B34;
+  --bg:#0E1216; --card:#171C22; --card-2:#1D232A;
+  --mast:#00182F; --mast-2:#0A2942; --mast-3:#123A5C; --mast-ink:#EDF2F6; --mast-mut:#7D95AC;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.34);
+  --shadow-lift:0 1px 2px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.44);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:14px;
+     -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;padding-bottom:56px}
+::selection{background:var(--brand);color:var(--card)}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.num{font-family:var(--fm);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ---------------- masthead ---------------- */
+header.top{background:var(--mast);color:var(--mast-ink);position:sticky;top:0;z-index:60}
+.top-inner{max-width:1440px;margin:0 auto;padding:15px 28px;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+/* the mark is navy on transparent, so on a navy masthead it needs its own
+   ground — the same white tile the brand uses everywhere else */
+.logo-chip{background:#FFFFFF;border-radius:11px;padding:5px;flex:none;display:flex;line-height:0}
+.logo{height:34px;width:34px;display:block}
+@media(max-width:700px){.logo{height:28px;width:28px}}
+.wordmark{font-size:10.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+  color:var(--mast-mut);line-height:1;margin-bottom:5px}
+.wordmark b{color:#8CC5F2;font-weight:800}
+.wordmark i{color:var(--accent-lite);font-style:normal}
+.htitle{font-size:15.5px;font-weight:700;letter-spacing:-.1px;line-height:1.2}
+.hsub{font-size:11.5px;color:var(--mast-mut);margin-top:3px;letter-spacing:.2px;font-weight:500}
+/* portfolio counters — this board has one dataset, so the masthead states its
+   size rather than offering a switch between boards that do not exist */
+.pstats{margin-left:auto;display:flex;background:var(--mast-2);border-radius:11px;padding:4px;gap:3px}
+.pstat{padding:8px 18px;border-radius:8px;text-align:right}
+.pstat .v{font-family:var(--fm);font-size:17px;font-weight:600;letter-spacing:-.5px;line-height:1.1;color:var(--mast-ink)}
+.pstat .l{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mast-mut);margin-top:4px}
+
+/* ---------------- filter rail ---------------- */
+.filters{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:var(--mastH,78px);z-index:55}
+.filters-inner{max-width:1440px;margin:0 auto;padding:13px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.fgroup{position:relative}
+.fbtn{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:9px 13px;font-family:var(--f);font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:.15s}
+.fbtn:hover{border-color:var(--muted);background:var(--card-2)}
+.fbtn.has{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-str)}
+.fbtn .lbl{color:var(--muted);font-weight:500}
+.fbtn.has .lbl{color:var(--brand-str)}
+.fbtn .cnt{background:var(--brand);color:var(--card);border-radius:20px;font-family:var(--fm);font-size:10px;font-weight:600;padding:2px 7px;min-width:18px;text-align:center}
+.caret{width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.fbtn.adv .advic{color:var(--brand);font-size:13px;line-height:1}
+.panel{position:absolute;top:calc(100% + 8px);left:0;background:var(--card);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow-lift);width:330px;max-height:0;overflow:hidden;opacity:0;pointer-events:none;transition:.16s;z-index:70}
+.panel.open{max-height:460px;opacity:1;pointer-events:auto}
+.panel.adv{width:min(680px,92vw)}
+.panel.adv.open{max-height:620px}
+.adv-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line-2)}
+.adv-head .t{font-size:13px;font-weight:700}
+.adv-head .t .d{font-size:11px;color:var(--muted);font-weight:500;margin-top:2px;line-height:1.45}
+.adv-head .m{text-align:right;white-space:nowrap}
+.adv-head .m .v{font-family:var(--fm);font-size:18px;font-weight:600;letter-spacing:-.4px;line-height:1.1}
+.adv-head .m .l{font-size:9.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.adv-body{max-height:430px;overflow-y:auto;padding:14px 16px}
+.adv-foot{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid var(--line-2)}
+.panel-search{padding:11px 12px;border-bottom:1px solid var(--line-2)}
+.panel-search input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:var(--f);
+  font-size:12.5px;outline:none;background:var(--card-2);color:var(--ink)}
+.panel-search input:focus{border-color:var(--brand)}
+.opts{max-height:310px;overflow-y:auto;padding:6px}
+.opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;transition:.1s}
+.opt:hover{background:var(--line-2)}
+.opt .box{width:16px;height:16px;border:2px solid var(--muted);border-radius:5px;flex:none;position:relative;transition:.12s}
+.opt.on .box{background:var(--brand);border-color:var(--brand)}
+.opt.on .box:after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border-right:2px solid var(--card);border-bottom:2px solid var(--card);transform:rotate(45deg)}
+.opt .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.opt.ph .nm{color:var(--muted);font-style:italic}
+.opt .qty{color:var(--muted);font-family:var(--fm);font-size:10.5px;font-weight:500}
+.panel-foot{display:flex;justify-content:space-between;padding:10px 12px;border-top:1px solid var(--line-2)}
+.panel-foot button{background:none;border:0;font-family:var(--f);font-size:12px;font-weight:700;color:var(--brand-str);cursor:pointer;padding:4px 6px}
+.panel-foot button.mut{color:var(--muted)}
+.scount{margin-left:auto;font-size:12.5px;color:var(--ink-2);font-weight:500;display:flex;align-items:center;gap:8px}
+.scount b{color:var(--ink);font-weight:700;font-family:var(--fm);font-size:12px}
+.reset{background:none;border:1px solid var(--line);border-radius:9px;padding:8px 13px;font-family:var(--f);font-size:12px;
+  font-weight:600;color:var(--ink-2);cursor:pointer;transition:.15s}
+.reset:hover{border-color:var(--brand);color:var(--brand-str)}
+/* live-sync status pill */
+.live{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:9px;padding:8px 12px;
+  font-family:var(--fm);font-size:11px;font-weight:500;color:var(--ink-2);cursor:pointer;background:var(--card);
+  transition:.15s;white-space:nowrap;user-select:none}
+.live:hover{border-color:var(--brand)}
+.live .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.live[data-state="live"]{border-color:var(--brand);color:var(--brand-str)}
+.live[data-state="live"] .dot{background:var(--brand)}
+.live[data-state="syncing"] .dot,.live[data-state="deferred"] .dot{background:var(--brand);animation:pulse 1.1s ease-in-out infinite}
+.live[data-state="stale"] .dot,.live[data-state="snapshot"] .dot{background:var(--pu)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.live .dot{animation:none!important}}
+.themebtn{background:none;border:1px solid var(--line);border-radius:9px;width:34px;height:34px;cursor:pointer;color:var(--ink-2);
+  font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s}
+.themebtn:hover{border-color:var(--brand);color:var(--brand-str)}
+
+/* ---------------- cohort builder ---------------- */
+.cg-wrap{display:flex;flex-direction:column;gap:0}
+.cg{border:1px solid var(--line);border-radius:12px;padding:13px 13px 5px;position:relative;background:var(--card-2)}
+.cg-or{align-self:center;font-family:var(--fm);font-size:10px;font-weight:600;color:var(--brand-str);background:var(--brand-soft);
+  padding:3px 12px;border-radius:20px;margin:9px 0;letter-spacing:.8px}
+.cg-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cg-head .allof{color:var(--brand-str);background:var(--brand-soft);padding:2px 8px;border-radius:20px}
+.cg-del{position:absolute;top:9px;right:9px;width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:var(--card);
+  color:var(--muted);cursor:pointer;font-size:14px;line-height:1}
+.cg-del:hover{border-color:var(--brand);color:var(--brand-str)}
+.cond{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.cond .andchip{font-family:var(--fm);font-size:9.5px;font-weight:600;color:var(--muted);width:32px;flex:none;text-align:center;letter-spacing:.5px}
+.cond select,.cond input{font-family:var(--f);font-size:12.5px;font-weight:600;border:1px solid var(--line);border-radius:8px;
+  padding:7px 9px;background:var(--card);color:var(--ink);outline:none;transition:.15s}
+.cond select:focus,.cond input:focus{border-color:var(--brand)}
+.cond .c-field{min-width:210px}
+.cond .c-op{min-width:70px}
+.cond input.c-val{width:96px;font-family:var(--fm)}
+.cond select.c-val{min-width:150px}
+.mschips{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:180px}
+.mschip{font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:20px;padding:5px 10px;background:var(--card);
+  color:var(--ink-2);cursor:pointer;transition:.12s;white-space:nowrap;font-family:var(--f)}
+.mschip:hover{border-color:var(--muted)}
+.mschip.on{background:var(--brand);border-color:var(--brand);color:var(--card)}
+.cond .c-del{margin-left:auto;width:27px;height:27px;border-radius:7px;border:1px solid var(--line);background:var(--card);
+  color:var(--muted);cursor:pointer;font-size:15px;line-height:1;flex:none;transition:.15s}
+.cond .c-del:hover{border-color:var(--brand);color:var(--brand-str)}
+.cg-add{background:none;border:0;color:var(--brand-str);font-family:var(--f);font-size:12px;font-weight:700;cursor:pointer;padding:4px 0 8px;margin-left:40px}
+.btn-add-group,.btn-clear-cohort{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 13px;
+  font-family:var(--f);font-size:12px;font-weight:700;color:var(--ink-2);cursor:pointer}
+.btn-add-group:hover{border-color:var(--brand);color:var(--brand-str)}
+.cohort-empty{padding:6px 2px}
+.cohort-empty p{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin-bottom:12px}
+
+/* ---------------- layout ---------------- */
+main{max-width:1440px;margin:0 auto;padding:22px 28px}
+/* ---------------- boot state ----------------
+   The page ships with no embedded data, so the first paint is this panel while
+   the sheet is being read. Everything below it renders only once data lands. */
+.boot{grid-column:span 12;display:flex;align-items:center;justify-content:center;min-height:min(58vh,440px)}
+.boot-in{display:flex;align-items:center;gap:16px;max-width:520px;padding:0 20px}
+.boot-t{font-size:15px;font-weight:700;letter-spacing:-.1px}
+.boot-d{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+.boot-spin{width:24px;height:24px;border-radius:50%;flex:none;
+  border:2.5px solid var(--track);border-top-color:var(--brand);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.boot.failed .boot-spin{border-top-color:var(--pu);animation:none}
+@media (prefers-reduced-motion:reduce){.boot-spin{animation:none}}
+/* while booting the rail has nothing to filter, so it is inert rather than misleading */
+body.booting .fbtn,body.booting .reset{opacity:.45;pointer-events:none}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px 17px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
+.kpi.hot:before{background:var(--accent)}
+.k-lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);line-height:1.35;min-height:28px}
+.k-val{font-family:var(--fm);font-size:29px;font-weight:600;letter-spacing:-1.2px;line-height:1;margin-top:7px;color:var(--ink)}
+.k-val .u{font-size:16px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:1px}
+.k-sub{font-size:11px;color:var(--ink-2);margin-top:7px;font-weight:500;line-height:1.4}
+.k-sub .num{font-size:10.5px}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:17px 19px 19px;min-width:0}
+.card.c4{grid-column:span 4}.card.c5{grid-column:span 5}.card.c6{grid-column:span 6}
+.card.c7{grid-column:span 7}.card.c8{grid-column:span 8}.card.c12{grid-column:span 12}
+.card-h{display:flex;align-items:flex-start;gap:12px;margin-bottom:13px}
+.card-t{font-size:14px;font-weight:700;letter-spacing:-.1px;display:flex;align-items:center;gap:7px;text-wrap:balance}
+.card-d{font-size:11.5px;color:var(--muted);margin-top:3px;font-weight:500;line-height:1.45}
+.tag{margin-left:auto;flex:none;font-family:var(--fm);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;
+  background:var(--brand-soft);color:var(--brand-str);padding:4px 9px;border-radius:20px;white-space:nowrap}
+.tag.hot{background:var(--accent-soft);color:var(--accent-str)}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.empty{padding:34px 10px;text-align:center;color:var(--muted);font-size:12.5px;font-weight:500}
+.note{font-size:11px;color:var(--muted);margin-top:13px;font-weight:500;line-height:1.55}
+.note .num{font-size:10.5px}
+.note b{color:var(--ink-2)}
+
+/* info popover */
+.info{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);font-size:9.5px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;cursor:help;position:relative;flex:none;font-family:var(--fm)}
+.info:hover,.info:focus{border-color:var(--brand);color:var(--brand-str)}
+/* display:none while closed keeps this absolutely-positioned panel out of the
+   document's scrollable overflow, which otherwise widens the page on mobile */
+.info-pop{display:none;position:absolute;top:calc(100% + 9px);left:-10px;width:min(360px,calc(100vw - 36px));
+  background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow-lift);padding:13px 14px;
+  pointer-events:none;z-index:80;text-align:left;font-family:var(--f);font-weight:400;color:var(--ink)}
+.info:hover .info-pop,.info:focus .info-pop{display:block;pointer-events:auto}
+.info-pop .hd{font-size:12px;font-weight:700;margin-bottom:7px}
+.info-pop .tx{font-size:11.5px;color:var(--ink-2);line-height:1.55}
+.info-pop .row{display:flex;gap:9px;align-items:flex-start;margin-top:7px}
+.info-pop .p{font-family:var(--fm);font-size:9.5px;font-weight:600;border-radius:5px;padding:2px 6px;flex:none;min-width:26px;text-align:center}
+.p.pP0{background:var(--p0);color:var(--p0-ink)}
+.p.pP1{background:var(--p1);color:var(--p1-ink)}
+.p.pP2{background:var(--p2);color:var(--p2-ink)}
+.p.pP3{background:var(--p3);color:var(--p3-ink)}
+.p.pU {background:var(--pu);color:var(--pu-ink)}
+
+/* svg text classes */
+.barlabel{font-family:var(--f);font-size:12px;font-weight:600;fill:var(--ink-2)}
+.barval{font-family:var(--fm);font-size:11px;font-weight:500;fill:var(--ink-2)}
+.axis{font-family:var(--fm);font-size:10px;font-weight:500;fill:var(--muted)}
+.axis-nm{font-family:var(--f);font-size:11px;font-weight:600;fill:var(--muted)}
+.famhead{font-family:var(--f);font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;fill:var(--muted)}
+.bar-track{fill:var(--track)}
+.gridline{stroke:var(--line);stroke-width:1}
+.rowhit{cursor:default}
+.rowhit:hover .bseg{filter:brightness(1.08)}
+.donut-v{font-family:var(--fm);font-size:26px;font-weight:600;fill:var(--ink);letter-spacing:-1px}
+.donut-l{font-family:var(--f);font-size:10.5px;font-weight:700;fill:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+
+/* meter rows */
+.mtr{display:flex;flex-direction:column;gap:3px}
+.mtr-glbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+  margin:13px 0 7px;display:flex;align-items:center;gap:9px}
+.mtr-glbl:first-child{margin-top:0}
+.mtr-glbl .win-sel{font-family:var(--fm);font-size:10px;font-weight:600;border:1px solid var(--line);border-radius:6px;
+  padding:2px 5px;background:var(--card);color:var(--ink-2);cursor:pointer;letter-spacing:0}
+.mtr-row{padding:6px 0}
+.mtr-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:5px}
+.mtr-lbl{font-size:12.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.mtr-val{font-family:var(--fm);font-size:14px;font-weight:600;color:var(--ink);letter-spacing:-.3px;white-space:nowrap}
+.mtr-bar{height:8px;border-radius:5px;background:var(--track);overflow:hidden}
+.mtr-bar i{display:block;height:100%;border-radius:5px;background:var(--brand);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.mtr-row.hot .mtr-bar i{background:var(--accent)}
+.mtr-sub{font-size:10.5px;color:var(--muted);margin-top:4px;font-weight:500}
+.mtr-sub .num{font-size:10px}
+.intent-wrap{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px}
+.intent-input{width:46px;font-family:var(--fm);font-size:11.5px;font-weight:600;border:1px solid var(--line);border-radius:6px;
+  padding:3px 5px;background:var(--card);color:var(--ink);outline:none;text-align:center}
+.intent-input:focus{border-color:var(--brand)}
+.stepper{display:flex;flex-direction:column;gap:1px}
+.stepper button{border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:6px;line-height:1;
+  padding:2px 4px;cursor:pointer;border-radius:3px}
+.stepper button:hover{border-color:var(--brand);color:var(--brand-str)}
+
+/* coverage rings */
+.cov-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.cov-tile{border:1px solid var(--line);border-radius:12px;padding:16px 12px 15px;text-align:center;background:var(--card-2)}
+.cov-rings{display:flex;justify-content:center;gap:8px;margin-bottom:11px}
+.cov-lbl{font-size:12.5px;font-weight:700;color:var(--ink)}
+.cov-sub{font-size:10.5px;color:var(--muted);margin-top:4px;font-weight:500;line-height:1.45}
+.cov-sub .num{font-size:10px}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:11px}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:860px}
+table.tbl th{text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+  padding:10px 12px;background:var(--card-2);border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0}
+table.tbl th.r,table.tbl td.r{text-align:right}
+table.tbl td{padding:9px 12px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+table.tbl tr:last-child td{border-bottom:0}
+table.tbl tbody tr:hover{background:var(--card-2)}
+table.tbl td.nm{font-weight:600;color:var(--ink);max-width:260px}
+table.tbl td.nm a{color:inherit;text-decoration:none;border-bottom:1px solid var(--line)}
+table.tbl td.nm a:hover{color:var(--brand-str);border-bottom-color:var(--brand)}
+table.tbl td.dim{color:var(--ink-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.tbl td.num,table.tbl th.num{font-family:var(--fm);font-variant-numeric:tabular-nums;font-size:11.5px}
+.sub{font-family:var(--fm);font-size:10px;font-weight:500;color:var(--muted);margin-top:2px}
+.pill{display:inline-block;font-family:var(--fm);font-size:9.5px;font-weight:600;border-radius:5px;padding:2px 7px}
+.pill.P0{background:var(--p0);color:var(--p0-ink)}
+.pill.P1{background:var(--p1);color:var(--p1-ink)}
+.pill.P2{background:var(--p2);color:var(--p2-ink)}
+.pill.P3{background:var(--p3);color:var(--p3-ink)}
+.pill.Unranked{background:var(--pu);color:var(--pu-ink)}
+/* the one place the brand red is used in the body: an externally-dated reason
+   to buy — Windows 10 support ended, and this account is researching it */
+.eol{display:inline-block;font-family:var(--fm);font-size:9px;font-weight:600;border-radius:5px;padding:2px 6px;
+  background:var(--accent-soft);color:var(--accent-str);white-space:nowrap}
+.sigstrip{display:inline-flex;gap:2px;vertical-align:middle}
+.sigstrip i{width:6px;height:15px;border-radius:2px;background:var(--track);display:block;cursor:help;transition:.12s}
+.sigstrip i:hover{outline:2px solid var(--brand);outline-offset:1px}
+.sigstrip i.on{background:var(--brand)}
+.sigstrip .gap{width:4px;background:transparent;pointer-events:none}
+
+/* tooltip */
+#tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .12s;background:var(--mast);color:var(--mast-ink);
+  border-radius:9px;padding:9px 12px;font-size:11.5px;line-height:1.5;box-shadow:0 8px 26px rgba(0,0,0,.3);z-index:200;max-width:290px}
+#tip .tt-t{font-weight:700;font-size:12px;margin-bottom:3px}
+#tip .tt-r{color:var(--mast-mut)}
+#tip .tt-r b{color:var(--mast-ink);font-family:var(--fm);font-weight:600}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:6px 15px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line-2)}
+.legend .li{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-2);font-weight:600}
+.legend .sw{width:11px;height:11px;border-radius:3px;flex:none}
+.legend .lv{font-family:var(--fm);font-size:10.5px;font-weight:500;color:var(--muted)}
+
+footer{max-width:1440px;margin:20px auto 0;padding:0 28px;color:var(--muted);font-size:11px;display:flex;
+  justify-content:space-between;flex-wrap:wrap;gap:8px;font-weight:500}
+footer a{color:var(--ink-2)}
+
+@media(max-width:1180px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .card.c4,.card.c5,.card.c6,.card.c7,.card.c8{grid-column:span 12}
+  .cov-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:700px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .top-inner{padding:14px 16px}.filters-inner,main,footer{padding-left:16px;padding-right:16px}
+  .pstats{margin-left:0;width:100%}.pstat{flex:1;text-align:center}
+  .cov-grid{grid-template-columns:1fr}
+  .cond .c-field{min-width:140px}
+  /* narrow screens: show the explainer as a bottom sheet so it always fits */
+  .info-pop{position:fixed;left:12px;right:12px;top:auto;bottom:12px;width:auto}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <span class="logo-chip"><img class="logo" src="capio-mark.png" width="34" height="34" alt="" decoding="async"></span>
+      <div>
+        <div class="wordmark">CAP<i>I</i>O <b>INTERNATIONAL</b></div>
+        <div class="htitle">Account Intelligence Dashboard</div>
+        <div class="hsub">Singapore enterprise portfolio &middot; signal enrichment by Sprouts</div>
+      </div>
+    </div>
+    <div class="pstats">
+      <div class="pstat"><div class="v" id="ps-rows">&mdash;</div><div class="l">Accounts</div></div>
+      <div class="pstat"><div class="v" id="ps-comp">&mdash;</div><div class="l">Companies</div></div>
+      <div class="pstat"><div class="v" id="ps-sig">&mdash;</div><div class="l">Signal-enriched</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="filters-inner" id="frail">
+    <div class="fgroup"><button class="fbtn" data-f="f0"><span class="lbl"></span><span class="ftxt">All</span><span class="caret"></span></button></div>
+    <div class="fgroup"><button class="fbtn" data-f="f1"><span class="lbl"></span><span class="ftxt">All</span><span class="caret"></span></button></div>
+    <div class="fgroup"><button class="fbtn" data-f="f2"><span class="lbl"></span><span class="ftxt">All</span><span class="caret"></span></button></div>
+    <div class="fgroup"><button class="fbtn adv" data-f="adv"><span class="advic">&#9883;</span><span class="lbl">Advanced</span><span class="ftxt"></span><span class="caret"></span></button></div>
+    <button class="reset" id="reset">Reset all</button>
+    <button class="themebtn" id="themebtn" title="Switch theme" aria-label="Switch theme">&#9788;</button>
+    <div class="live" id="live" data-state="snapshot" role="status" tabindex="0" aria-live="polite"><span class="dot"></span><span class="lt">Snapshot</span></div>
+    <div class="scount num" id="scount"></div>
+  </div>
+</div>
+
+<main>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid" id="grid"></div>
+  <footer>
+    <div>Capio International Pte Ltd &middot; Account Intelligence &middot; prepared for the sales team</div>
+    <div id="foot-src"></div>
+  </footer>
+</main>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+const SNAPSHOT =
+null;
+const SNAPSHOT_AT = null;
+/* ============================================================
+   Live data layer.
+
+   Nothing is baked into this file. On load the page reads the
+   Accounts tab of the Google Sheet, derives the whole board in
+   the browser, and re-reads every REFRESH_MS. buildData() below
+   is a direct port of build_data.py — the two must agree.
+   ============================================================ */
+/* ---------------- data source ----------------
+   In production the page talks to /api/sheet, a serverless proxy that holds the
+   spreadsheet id in SHEET_ID and caches at the edge — so the id never reaches
+   the browser and N viewers cost one upstream read per minute instead of N.
+
+   Passing ?sheet=<spreadsheetId> bypasses the proxy and reads Google directly,
+   which is how the file works when opened from disk or served statically.     */
+const TAB_GID = { accounts: '0' };
+const Q = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
+const DIRECT_SHEET = Q.get('sheet');
+const REFRESH_MS = (() => {
+  const s = parseInt(Q.get('refresh') || '', 10);
+  return Number.isFinite(s) ? Math.min(Math.max(s, 15), 3600) * 1000 : 60000;
+})();
+const sourceUrl = tab => DIRECT_SHEET
+  ? `https://docs.google.com/spreadsheets/d/${encodeURIComponent(DIRECT_SHEET)}/export?format=csv&gid=${TAB_GID[tab]}`
+  : `/api/sheet?tab=${tab}`;
+const DIRECT = !!DIRECT_SHEET;
+
+/* ---------------- CSV ---------------- */
+/* RFC4180: quoted fields may contain commas, newlines and doubled quotes. The
+   signal narratives contain all three, so this cannot be a split(','). */
+function parseCSV(text){
+  if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = [];
+  let row = [], field = '', i = 0, quoted = false;
+  const n = text.length;
+  while(i < n){
+    const c = text[i];
+    if(quoted){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
+        quoted = false; i++; continue;
+      }
+      field += c; i++; continue;
+    }
+    if(c === '"'){ quoted = true; i++; continue; }
+    if(c === ','){ row.push(field); field = ''; i++; continue; }
+    if(c === '\r'){ i++; continue; }
+    if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+    field += c; i++;
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  // drop wholly blank lines, matching the Python loader
+  return rows.filter(r => r.some(c => c.trim() !== ''));
+}
+
+/* ---------------- field helpers (ported 1:1) ---------------- */
+const RX_PLACE = /^(unknown|#ref!?|#n\/?a|n\/?a|na|null|none|nil|tbd|-+|\.+)$/i;
+/* A narrative that opens by denying the thing it was asked about is an absence
+   of signal, not a signal. Today's export carries only positive narratives, but
+   the sheet is re-enriched continuously and this keeps a future "No, there is no
+   evidence of..." from being scored as evidence. */
+const RX_NEG = /^\s*[-*\s]*\**\s*(no\b|none\b|not\b|there (are|is) no|no (clear|public|direct|confirmed|specific|evidence|signal|indication))/i;
+
+const L_clean = v => { const t = (v==null?'':String(v)).trim(); return RX_PLACE.test(t) ? '' : t; };
+function L_normTxt(v){
+  const t = L_clean(v);
+  if(!t || t.length < 12) return '';
+  return RX_NEG.test(t) ? '' : t;
+}
+function L_num(v){
+  const t = L_clean(v).replace(/,/g,'');
+  if(!t) return null;
+  const f = Number(t);
+  return Number.isFinite(f) ? f : null;
+}
+const L_title = s => { const t = L_clean(s); return t || 'Unknown'; };
+
+/* ---------------- the signals ----------------
+   25 enrichment columns, grouped into the four families Capio sells to. Order
+   inside a family runs from the most direct read on a purchase to the most
+   circumstantial, so the signal strip in the table reads left to right. */
+const L_FAMILIES = [
+  ['AI & Copilot Readiness', [
+    ['AI presence in Singapore',       'AI Presence In Singapore'],
+    ['AI adoption in Singapore',       'AI Adoption In Singapore'],
+    ['AI hiring in Singapore',         'AI Hiring Activity Singapore'],
+    ['Singapore AI initiatives',       'Singapore AI Initiatives'],
+    ['AI infrastructure investment',   'Singapore AI Infrastructure Investment'],
+    ['Copilot deployment',             'Copilot Deployment Status'],
+  ]],
+  ['Workplace & Office', [
+    ['Singapore office activity',      'Singapore Office Activity'],
+    ['Singapore tech deployments',     'Singapore Tech Deployments'],
+    ['Singapore office status',        'Singapore Office Status'],
+    ['Workplace technology programme', 'Workplace Technology Initiatives'],
+    ['Office / hybrid policy',         'Singapore Office Policy'],
+  ]],
+  ['IT Modernisation', [
+    ['Automation initiatives',         'Singapore Automation Initiatives'],
+    ['Digital transformation',         'Digital Transformation Activity'],
+    ['Network upgrades',               'Singapore Network Upgrades'],
+    ['IT resilience programme',        'IT Resilience Initiatives'],
+    ['IT modernisation plans',         'IT Modernisation Plans'],
+    ['Cloud adoption',                 'Singapore Cloud Adoption'],
+    ['Singapore IT investment',        'Singapore IT Investments'],
+    ['Security initiatives',           'Singapore Security Initiatives'],
+  ]],
+  ['Growth & Funding', [
+    ['Singapore regional presence',    'Singapore Regional Presence'],
+    ['Singapore market activity',      'Singapore Market Activity'],
+    ['Singapore hiring trend',         'Singapore Hiring Trend'],
+    ['Funding impact',                 'Singapore Funding Impact'],
+    ['Government grant support',       'Singapore Grant Support'],
+    ['Workforce expansion',            'Singapore Workforce Expansion'],
+  ]],
+];
+const L_SIGNALS = L_FAMILIES.flatMap(([, pairs]) => pairs);
+const L_SIG_LABELS = L_SIGNALS.map(s => s[0]);
+const L_SIX = {}; L_SIG_LABELS.forEach((l,i) => L_SIX[l] = i);
+/* family name -> the signal indices it owns, so the board can group without
+   re-stating the taxonomy */
+const L_FAM_IX = (() => { let k = 0;
+  return L_FAMILIES.map(([fam, pairs]) => [fam, pairs.map(() => k++)]); })();
+const L_FAM_OF = {}; L_FAM_IX.forEach(([fam, ixs]) => ixs.forEach(i => L_FAM_OF[i] = fam));
+
+/* Third-party intent topics that name a device, an operating system or a desktop
+   delivery model. These are the topics Capio can quote against directly, and are
+   what separates "researching something" from "researching a fleet". */
+const L_DEVICE_TOPICS = new Set([
+  'Laptop','Workstations','Windows 10','Windows 11',
+  'AI PC (Artificial Intelligence Personal Computer)',
+  'Lenovo ThinkPad','Lenovo ThinkCentre','Lenovo ThinkBook','Lenovo ThinkStation',
+  'HP EliteBook','Apple MacBook Air','Apple MacBook Pro',
+  'Desktop as a Service (DaaS)',
+]);
+/* Windows 10 went out of support in October 2025. An account researching it — or
+   researching what replaces it — has a dated, externally-imposed reason to buy. */
+const L_EOL_TOPICS = new Set(['Windows 10','Windows 11','AI PC (Artificial Intelligence Personal Computer)']);
+
+/* ---------------- banding ----------------
+   The portfolio runs from 2 staff to 150,832, so the bands are logarithmic
+   rather than even. Company headcount sizes the fleet; IT headcount sizes both
+   the buying committee and the team that would run a deployment. */
+const HC_BANDS = ['< 200','200 – 999','1,000 – 4,999','5,000 – 19,999','20,000+'];
+function L_hcBand(n){
+  if(n == null) return 'Unknown';
+  if(n < 200)   return '< 200';
+  if(n < 1000)  return '200 – 999';
+  if(n < 5000)  return '1,000 – 4,999';
+  if(n < 20000) return '5,000 – 19,999';
+  return '20,000+';
+}
+const IT_BANDS = ['< 10','10 – 49','50 – 199','200 – 999','1,000+'];
+function L_itBand(n){
+  if(n == null) return 'Unknown';
+  if(n < 10)   return '< 10';
+  if(n < 50)   return '10 – 49';
+  if(n < 200)  return '50 – 199';
+  if(n < 1000) return '200 – 999';
+  return '1,000+';
+}
+
+/* The (nM) columns hold an absolute change; express it against the base it grew
+   from. floor(x + .5) because JavaScript rounds halves toward +infinity and
+   Python rounds them to even — the port has to agree on the boundary. */
+function L_growthPct(now, delta){
+  if(now == null || delta == null) return null;
+  const base = now - delta;
+  if(base <= 0) return null;
+  return Math.floor(delta / base * 1000 + 0.5) / 10;
+}
+
+/* ---------------- the transform ---------------- */
+function buildData(accCsv){
+  const A = parseCSV(accCsv);
+  if(A.length < 2) throw new Error('empty sheet export');
+  const hdr = A[0].map(h => h.trim());   // the source headers carry trailing spaces
+  const rowsIn = A.slice(1);
+
+  const ix = name => { const i = hdr.indexOf(name); if(i < 0) throw new Error('missing column: '+name); return i; };
+  const a = {};
+  ['Domain','Company HQ','Industry','Singapore Hiring','Global Hiring','Linkedin URL',
+   'Revenue','Intent Score','Intent Topics','IT Headcount','IT HC (3M)','IT HC (6M)','IT HC (12M)',
+   'Company Headcount','Company Headcount (3M)','Company Headcount (6M)','Company Headcount (12M)']
+   .forEach(k => a[k] = ix(k));
+  a.name = 0;                            // "Existing Accounts - If any — ..."
+  const sigIx = L_SIGNALS.map(([, col]) => ix(col));
+
+  /* Domain is the identity the whole board keys on. Five domains appear twice
+     under two legal names — the same company listed as two rows — so the
+     collision is counted and named rather than silently double-counted. */
+  const nameFreq = new Map(), domFreq = new Map();
+  const bump = (m,k) => m.set(k, (m.get(k)||0)+1);
+  for(const r of rowsIn){
+    const nm = L_clean(r[a.name]); if(nm) bump(nameFreq, nm.toLowerCase());
+    const dm = L_clean(r[a['Domain']]).toLowerCase(); if(dm) bump(domFreq, dm);
+  }
+
+  const out = [], topicCount = new Map();
+  for(let r of rowsIn){
+    if(r.length < hdr.length) r = r.concat(new Array(hdr.length - r.length).fill(''));
+    const name = L_clean(r[a.name]);
+    if(!name) continue;
+    const dom = L_clean(r[a['Domain']]).toLowerCase();
+
+    const s = sigIx.map(i => L_normTxt(r[i]) ? 1 : 0);
+    const nsig = s.reduce((x,y)=>x+y, 0);
+
+    const ints = Math.trunc(L_num(r[a['Intent Score']]) || 0);
+    const tps = L_clean(r[a['Intent Topics']]).split(',').map(t=>t.trim()).filter(Boolean);
+    tps.forEach(t => topicCount.set(t, (topicCount.get(t)||0)+1));
+
+    const gh = Math.trunc(L_num(r[a['Global Hiring']]) || 0);
+    const sh = Math.trunc(L_num(r[a['Singapore Hiring']]) || 0);
+
+    const hc = L_num(r[a['Company Headcount']]);
+    const g3  = L_growthPct(hc, L_num(r[a['Company Headcount (3M)']]));
+    const g6  = L_growthPct(hc, L_num(r[a['Company Headcount (6M)']]));
+    const g12 = L_growthPct(hc, L_num(r[a['Company Headcount (12M)']]));
+    const ithc = L_num(r[a['IT Headcount']]);
+    const itg3  = L_growthPct(ithc, L_num(r[a['IT HC (3M)']]));
+    const itg6  = L_growthPct(ithc, L_num(r[a['IT HC (6M)']]));
+    const itg12 = L_growthPct(ithc, L_num(r[a['IT HC (12M)']]));
+
+    const dev = tps.some(t => L_DEVICE_TOPICS.has(t)) ? 1 : 0;
+    const eol = tps.some(t => L_EOL_TOPICS.has(t)) ? 1 : 0;
+
+    // ---- the five tests the priority tiers are built from --------------------
+    // A  a device-level purchase is already being researched
+    const A_ = !!dev;
+    // B  there is a fleet to serve and something is moving it: local hiring, a
+    //    workforce or office change, or an IT org big enough to run a rollout
+    const B_ = !!(sh >= 1 || s[L_SIX['Workforce expansion']] || s[L_SIX['Singapore hiring trend']]
+                  || s[L_SIX['Singapore office status']] || s[L_SIX['Singapore office activity']]
+                  || (ithc != null && ithc >= 50));
+    // C  an AI programme is live — the AI PC and Copilot-device conversation
+    const C_ = L_FAM_IX[0][1].some(i => s[i]);
+    // D  an IT modernisation programme is live — services and the LGA cross-sell
+    const D_ = L_FAM_IX[2][1].some(i => s[i]);
+    // E  a workplace or deployment programme has been announced
+    const E_ = !!(s[L_SIX['Workplace technology programme']] || s[L_SIX['Singapore tech deployments']]);
+
+    let pri;
+    if(A_ && B_ && C_ && D_) pri = 'P0';
+    else if((A_ && B_ && (C_ || D_ || E_)) || (B_ && C_ && D_ && E_)) pri = 'P1';
+    else if((A_ && (B_ || C_ || D_ || E_)) || (B_ && (C_ || D_)) || (E_ && (C_ || D_))) pri = 'P2';
+    else if(nsig >= 1 || A_) pri = 'P3';
+    else pri = 'Unranked';
+
+    out.push({
+      n:name, d:dom, ind:L_title(r[a['Industry']]), hq:L_title(r[a['Company HQ']]),
+      bnd:L_hcBand(hc), itb:L_itBand(ithc),
+      hc: hc==null?null:Math.trunc(hc), ithc: ithc==null?null:Math.trunc(ithc),
+      rev: L_num(r[a['Revenue']]),
+      g3, g6, g12, itg3, itg6, itg12,
+      'is': ints, nt: tps.length, dev, eol, sh, gh,
+      li: L_clean(r[a['Linkedin URL']]) ? 1 : 0,
+      pri,
+      dn: nameFreq.get(name.toLowerCase()) > 1 ? 1 : 0,
+      dd: (dom && domFreq.get(dom) > 1) ? 1 : 0,
+      s, t: tps,
+    });
+  }
+
+  /* the same company listed twice under two legal names: same domain, same
+     headcount, two rows. Named here so the board can show them rather than
+     quietly counting one company as two accounts. */
+  const dupes = [];
+  for(const [dm, c] of domFreq) if(c > 1)
+    dupes.push([dm, [...new Set(out.filter(x=>x.d===dm).map(x=>x.n))].sort()]);
+  dupes.sort((x,y)=> x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0);
+
+  /* ---- compaction: intern the categoricals, emit positional rows ---- */
+  const DICTS = {};
+  function intern(key, val){
+    let d = DICTS[key];
+    if(!d){ d = DICTS[key] = {list:[], ix:new Map()}; }
+    if(!d.ix.has(val)){ d.ix.set(val, d.list.length); d.list.push(val); }
+    return d.ix.get(val);
+  }
+  const COLS = ['n','d','ind','hq','bnd','itb','hc','ithc','rev','g3','g6','g12',
+                'itg3','itg6','itg12','is','nt','dev','eol','sh','gh','li',
+                'pri','dn','dd','s','t'];
+  const CATS = {ind:'ind', hq:'hq', bnd:'bnd', itb:'itb', pri:'pri'};
+  const packed = out.map(r => COLS.map(c =>
+    CATS[c] ? intern(CATS[c], r[c]) : c==='t' ? r[c].map(t=>intern('topic',t)) : r[c]));
+
+  const n = out.length;
+  const cnt = f => out.reduce((s,x)=>s+(f(x)?1:0), 0);
+  const famHit = k => cnt(x => L_FAM_IX[k][1].some(i => x.s[i]));
+  // rows are not companies: five domains appear twice under two legal names
+  const distinct = new Set(out.filter(x=>x.d).map(x=>x.d)).size + cnt(x=>!x.d);
+  const cov = {
+    given: rowsIn.length, rows: n, distinct,
+    domain: cnt(x=>!!x.d), li: cnt(x=>x.li),
+    signal: cnt(x=>x.s.reduce((p,v)=>p+v,0) > 0),
+    intent: cnt(x=>x['is'] > 0), device: cnt(x=>x.dev), eol: cnt(x=>x.eol),
+    hc: cnt(x=>x.hc != null), ithc: cnt(x=>x.ithc != null), rev: cnt(x=>x.rev != null),
+    firmo: cnt(x=>x.ind !== 'Unknown' && x.hq !== 'Unknown'),
+    dupname: cnt(x=>x.dn), dupdom: cnt(x=>x.dd),
+    ai: famHit(0), work: famHit(1), mod: famHit(2), grow: famHit(3),
+  };
+
+  const topN = (m,k) => [...m.entries()].sort((x,y)=> y[1]-x[1]).slice(0,k);
+  const dict = {}; for(const k in DICTS) dict[k] = DICTS[k].list;
+
+  return {
+    dict,
+    accounts: {cols: COLS, rows: packed, n},
+    summary: {
+      signals: L_SIG_LABELS, families: L_FAM_IX,
+      hcBands: HC_BANDS, itBands: IT_BANDS,
+      deviceTopics: [...L_DEVICE_TOPICS].sort(), eolTopics: [...L_EOL_TOPICS].sort(),
+      topics: topN(topicCount, 25), dupes, cov,
+    },
+  };
+}
+;
+/* ============================================================
+   Capio International Account Intelligence
+   One dataset: account-level signal enrichment for the Singapore
+   enterprise portfolio.
+   ============================================================ */
+
+/* ---------------- dictionaries & hydration ----------------
+   These are re-bound whenever a fresh copy of the sheet arrives, so they are
+   `let`, not `const`. Everything downstream reads them at render time.       */
+let DATA, SIG, FAMS, HCB, ITB, ACC, L, RX;
+
+function hydrate(ds){
+  const cols = ds.cols;
+  return ds.rows.map(r => { const o = {}; for(let i=0;i<cols.length;i++) o[cols[i]] = r[i]; return o; });
+}
+
+/* Filter selections are held as dictionary indices, but the dictionaries are
+   built in row order — so a sheet edit can shift them. Carry the selections
+   across by label and drop anything that no longer exists. */
+function remapFilters(oldL){
+  FILTERS.forEach(({key, dict}) => {
+    const set = S[key];
+    if(!set || !set.size) return;
+    const labels = [...set].map(i => oldL[dict][i]).filter(v => v != null);
+    set.clear();
+    labels.forEach(lbl => { const i = RX[dict][lbl]; if(i != null) set.add(i); });
+  });
+}
+
+function adopt(raw){
+  const oldL = L;
+  DATA = raw;
+  SIG  = raw.summary.signals;
+  FAMS = raw.summary.families;
+  HCB  = raw.summary.hcBands;
+  ITB  = raw.summary.itBands;
+  const d = raw.dict;
+  L = { ind:d.ind||[], hq:d.hq||[], bnd:d.bnd||[], itb:d.itb||[], pri:d.pri||[], topic:d.topic||[] };
+  RX = {}; for(const k in L){ RX[k] = {}; L[k].forEach((v,i)=>RX[k][v]=i); }
+  ACC = hydrate(raw.accounts);
+  if(oldL) remapFilters(oldL);
+}
+
+const PRI_ORDER = ['P0','P1','P2','P3','Unranked'];
+
+/* ---------------- state ---------------- */
+const FILTERS = [
+  {key:'ind', dict:'ind', label:'Industry',   plural:'industries'},
+  {key:'hq',  dict:'hq',  label:'HQ country', plural:'countries'},
+  {key:'bnd', dict:'bnd', label:'Headcount',  plural:'headcount bands'},
+];
+const S = { cohort:{groups:[]}, intentMin:1, gWin:'12', itWin:'12' };
+FILTERS.forEach(f => S[f.key] = new Set());
+const F = () => S;
+const WINLBL = {'3':'3-month','6':'6-month','12':'12-month'};
+
+/* No data is embedded in this file — see the README. `adopt` still needs a
+   well-formed dataset to boot from, so it gets an empty one and the page paints
+   the boot panel until the first sheet read lands. */
+function emptyDataset(){
+  const zero = {};
+  ['given','rows','distinct','domain','li','signal','intent','device','eol','hc','ithc',
+   'rev','firmo','dupname','dupdom','ai','work','mod','grow'].forEach(k => zero[k] = 0);
+  return {
+    dict: {ind:[], hq:[], bnd:[], itb:[], pri:[], topic:[]},
+    accounts: {cols:[], rows:[], n:0},
+    summary: {signals:L_SIG_LABELS, families:L_FAM_IX, hcBands:HC_BANDS, itBands:IT_BANDS,
+              deviceTopics:[], eolTopics:[], topics:[], dupes:[], cov:zero},
+  };
+}
+adopt(SNAPSHOT || emptyDataset());
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const pct = (a,b) => b ? Math.round(a/b*1000)/10 : 0;
+const fmt = n => (n==null ? '—' : n.toLocaleString('en-US'));
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const isPlace = v => /^(unknown|n\/a|none|other|no history)$/i.test(String(v||'').trim());
+const clip = (s,n) => s.length > n ? s.slice(0,n-1)+'…' : s;
+let uid = 0;   /* unique ids: several bar charts coexist in one document */
+const PRI_COL = p => ({P0:'var(--p0)',P1:'var(--p1)',P2:'var(--p2)',P3:'var(--p3)'})[p] || 'var(--pu)';
+const FAM_COL = i => `var(--fam${i%4})`;
+function rankSort(entries){ // [label,value] desc, placeholder labels pushed last
+  return entries.sort((a,b)=>{ const pa=isPlace(a[0]), pb=isPlace(b[0]);
+    if(pa!==pb) return pa?1:-1; return b[1]-a[1]; });
+}
+/* revenue is a raw figure; band it so the card reads as a distribution */
+const REV_BANDS = [['< $10M',0,1e7],['$10 – 100M',1e7,1e8],['$100M – 1B',1e8,1e9],
+                   ['$1 – 10B',1e9,1e10],['$10B+',1e10,Infinity]];
+/* 12-month company headcount change, banded. "Flat" is its own band because a
+   headcount that has not moved is a different story from one that is shrinking. */
+const MOM_BANDS = [['Shrinking',-Infinity,-0.05],['Flat to +5%',-0.05,5],
+                   ['Growing 5 – 15%',5,15],['Growing 15%+',15,Infinity]];
+/* four ordered bands, worst to best, onto four steps of the navy ramp — an
+   account with no headcount history is a genuine unknown and takes the neutral */
+const MOM_COL = ['var(--p3)','var(--p2)','var(--p1)','var(--p0)'];
+/* five ordered bands onto a four-step ramp: the two smallest share the light end,
+   so the steps stay monotone rather than collapsing the two largest together */
+const BAND_STEP = [3,3,2,1,0];
+const rampBy = (list, order, tok) => i => {
+  const k = order.indexOf(list[i][0]);
+  return k < 0 ? 'var(--pu)' : `var(--${tok}${BAND_STEP[Math.min(k, BAND_STEP.length-1)]})`;
+};
+
+/* ---------------- cohort matching ---------------- */
+const asArr = v => Array.isArray(v) ? v : (v==='' || v==null ? [] : [v]);
+const FIELDS_DEF = {
+  hc:      {label:'Company headcount',            type:'num',  get:x=>x.hc,    def:{op:'>=',val:1000}},
+  ithc:    {label:'IT headcount',                 type:'num',  get:x=>x.ithc,  def:{op:'>=',val:50}},
+  rev:     {label:'Reported revenue',             type:'num',  get:x=>x.rev,   def:{op:'>=',val:100000000}},
+  intent:  {label:'Intent score',                 type:'num',  get:x=>x['is'], def:{op:'>=',val:5}},
+  ntopic:  {label:'Intent topics researched',     type:'num',  get:x=>x.nt,    def:{op:'>=',val:3}},
+  shire:   {label:'Open roles in Singapore',      type:'num',  get:x=>x.sh,    def:{op:'>=',val:1}},
+  ghire:   {label:'Open roles globally',          type:'num',  get:x=>x.gh,    def:{op:'>=',val:1}},
+  growth:  {label:'Company headcount growth %',   type:'num',  get:x=>x.g12,   def:{op:'>',val:10}, unit:'%'},
+  itgrowth:{label:'IT headcount growth %',        type:'num',  get:x=>x.itg12, def:{op:'>',val:10}, unit:'%'},
+  nsig:    {label:'Distinct signals on account',  type:'num',  get:x=>x.s.reduce((p,v)=>p+v,0), def:{op:'>=',val:5}},
+  dev:     {label:'Researching devices',          type:'bool', get:x=>x.dev,   def:{op:'is',val:'1'}},
+  eol:     {label:'Researching Windows / AI PC',  type:'bool', get:x=>x.eol,   def:{op:'is',val:'1'}},
+  signal:  {label:'Buying signal',                type:'multi', opts:()=>SIG.map((l,i)=>[String(i),l]),
+            test:(x,v)=>x.s[+v]===1, def:{op:'hasany',val:['0','11']}},
+  family:  {label:'Signal family',                type:'multi', opts:()=>FAMS.map(([f],i)=>[String(i),f]),
+            test:(x,v)=>FAMS[+v][1].some(i=>x.s[i]===1), def:{op:'hasall',val:['0','2']}},
+  priority:{label:'Priority tier',                type:'multi', opts:()=>PRI_ORDER.map(p=>[p,p]),
+            test:(x,v)=>L.pri[x.pri]===v, def:{op:'in',val:['P0','P1']}},
+  itb:     {label:'IT organisation size',         type:'multi', opts:()=>ITB.map(b=>[b,b]),
+            test:(x,v)=>L.itb[x.itb]===v, def:{op:'in',val:['200 – 999','1,000+']}},
+};
+const FIELDS = () => FIELDS_DEF;
+
+const NUM_OPS   = {'>':'>','>=':'≥','<':'<','<=':'≤','=':'='};
+const MULTI_OPS = {in:'is any of', nin:'is none of', hasany:'has any of', hasall:'has all of', hasnone:'has none of'};
+const BOOL_OPS  = {is:'is'};
+const BOOL_VALS = [['1','yes'],['0','no']];
+const opsFor = t => t==='num' ? NUM_OPS : t==='bool' ? BOOL_OPS : MULTI_OPS;
+const isMultiOp = op => ['in','nin','hasany','hasall','hasnone'].includes(op);
+
+function matchCond(x,c){
+  const f = FIELDS()[c.field];
+  if(!f) return true;
+  if(f.type==='multi'){
+    const A = asArr(c.val); const on = v => f.test(x,v);
+    if(!A.length) return true;
+    if(c.op==='in'||c.op==='hasany')  return A.some(on);
+    if(c.op==='hasall')               return A.every(on);
+    if(c.op==='nin'||c.op==='hasnone')return A.every(v=>!on(v));
+    return true;
+  }
+  if(f.type==='bool') return (f.get(x)?1:0) === (c.val==='1'?1:0);
+  const v = f.get(x);
+  if(v==null) return false;
+  const t = parseFloat(c.val); if(isNaN(t)) return true;
+  return c.op==='>'?v>t : c.op==='>='?v>=t : c.op==='<'?v<t : c.op==='<='?v<=t : v===t;
+}
+const grpActive = g => g.conds.length > 0;
+const cohortActive = () => S.cohort.groups.some(grpActive);
+const matchCohort = x => S.cohort.groups.some(g => grpActive(g) && g.conds.every(c=>matchCond(x,c)));
+
+/* ---------------- filtering ---------------- */
+function rows(){
+  let a = ACC;
+  FILTERS.forEach(({key}) => { const set = S[key]; if(set && set.size) a = a.filter(x=>set.has(x[key])); });
+  if(cohortActive()) a = a.filter(matchCohort);
+  return a;
+}
+const total = () => DATA.accounts.n;
+function tally(a, key){ const m = new Map(); for(const x of a){ m.set(x[key], (m.get(x[key])||0)+1); } return m; }
+function byLabel(a, key, dict){
+  const m = tally(a,key), out = [];
+  for(const [k,v] of m) out.push([L[dict][k], v]);
+  return rankSort(out);
+}
+const nsigOf = x => x.s.reduce((p,v)=>p+v, 0);
+
+/* ---------------- tooltip ---------------- */
+const tip = $('#tip');
+function showTip(e,html){ tip.innerHTML = html; tip.style.opacity = 1; moveTip(e); }
+function moveTip(e){
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX - r.width/2, y = e.clientY - r.height - 14;
+  x = Math.max(8, Math.min(x, innerWidth - r.width - 8));
+  if(y < 8) y = e.clientY + 18;
+  tip.style.left = x+'px'; tip.style.top = y+'px';
+}
+const hideTip = () => { tip.style.opacity = 0; };
+function bindTip(node, html){
+  node.addEventListener('mousemove', e=>showTip(e, typeof html==='function'?html():html));
+  node.addEventListener('mouseleave', hideTip);
+}
+
+/* ---------------- SVG utilities ---------------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(t,a){ const e = document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); return e; }
+function svg(w,h){ return el('svg',{viewBox:`0 0 ${w} ${h}`,preserveAspectRatio:'xMidYMid meet'}); }
+function txt(s,a,content){ const t = el('text',a); t.textContent = content; s.appendChild(t); return t; }
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function grow(node, attrs, delay){
+  if(REDUCED){ for(const k in attrs) node.setAttribute(k, attrs[k]); return; }
+  setTimeout(()=>{ node.style.transition = 'width .6s cubic-bezier(.2,.8,.2,1),height .6s cubic-bezier(.2,.8,.2,1),y .6s cubic-bezier(.2,.8,.2,1),x .6s cubic-bezier(.2,.8,.2,1)';
+    for(const k in attrs) node.setAttribute(k, attrs[k]); }, 20 + delay);
+}
+const emptyBox = (box,msg) => { box.innerHTML = `<div class="empty">${esc(msg||'Nothing matches the current filters.')}</div>`; };
+/* An SVG with a viewBox scales to its container, and a 25-row chart in a wide
+   card scales *up* — magnifying every label along with the bars. Measuring the
+   card and drawing at that width keeps type at the size it was designed at. */
+function boxW(box, fallback){
+  const w = Math.round(box.getBoundingClientRect().width);
+  return w > 240 ? w : (fallback || 700);
+}
+const addNote = (box,html) => { const n = document.createElement('div'); n.className = 'note'; n.innerHTML = html; box.appendChild(n); return n; };
+
+/* ---------------- chart: ranked horizontal bars ---------------- */
+/* entries: [label, value] · one hue per series (a per-bar ramp is only used
+   where the categories are genuinely ordered, passed in via opts.ramp).      */
+function hbars(box, entries, opts){
+  box.innerHTML = '';
+  const o = Object.assign({labelW:168, right:78, rowH:29, noun:'accounts', denom:0,
+                           onClick:null, active:null, ramp:null}, opts||{});
+  if(!entries.length){ emptyBox(box, o.emptyMsg); return; }
+  const W = boxW(box), top = 4, H = top + entries.length*o.rowH + 4, trackW = W - o.labelW - o.right;
+  const s = svg(W,H);
+  const gid = 'gBar'+(++uid);
+  const defs = el('defs',{}); s.appendChild(defs);
+  const g1 = el('linearGradient',{id:gid,x1:0,y1:0,x2:1,y2:0});
+  g1.appendChild(el('stop',{offset:0,style:'stop-color:var(--brand-str)'}));
+  g1.appendChild(el('stop',{offset:1,style:'stop-color:var(--brand-lite)'}));
+  defs.appendChild(g1);
+  const max = Math.max(...entries.map(e=>e[1]), 1);
+  const den = o.denom || entries.reduce((a,b)=>a+b[1],0);
+  entries.forEach((e,i)=>{
+    const y = top + i*o.rowH, ph = isPlace(e[0]);
+    const on = o.active && o.active.has(e[0]);
+    txt(s,{x:0,y:y+o.rowH/2+4,'class':'barlabel',style:ph?'fill:var(--muted);font-style:italic':''},
+        clip(e[0], Math.floor(o.labelW/6.6)));
+    const bh = 14, by = y + (o.rowH-bh)/2;
+    s.appendChild(el('rect',{x:o.labelW,y:by,width:trackW,height:bh,rx:4,'class':'bar-track'}));
+    const bw = Math.max(0, trackW*e[1]/max);
+    const fill = ph ? 'var(--pu)' : o.ramp ? o.ramp(i) : (on ? 'var(--brand-str)' : `url(#${gid})`);
+    const g = el('g',{'class':'rowhit'});
+    const r = el('rect',{x:o.labelW,y:by,width:0,height:bh,rx:4,fill:fill,'class':'bseg'});
+    g.appendChild(r);
+    const vt = txt(s,{x:o.labelW+8,y:y+o.rowH/2+4,'class':'barval'}, `${fmt(e[1])} · ${pct(e[1],den)}%`);
+    g.appendChild(vt);
+    g.appendChild(el('rect',{x:0,y:y,width:W,height:o.rowH,fill:'transparent'}));
+    bindTip(g, ()=>`<div class="tt-t">${esc(e[0])}</div><div class="tt-r"><b>${fmt(e[1])}</b> ${o.noun} · <b>${pct(e[1],den)}%</b>${on?' · <b>filtered</b>':''}</div>`
+      + (o.tipExtra ? o.tipExtra(e,i) : ''));
+    if(o.onClick){ g.style.cursor='pointer'; g.addEventListener('click',()=>o.onClick(e[0])); }
+    s.appendChild(g);
+    grow(r,{width:bw}, i*22); grow(vt,{x:o.labelW+bw+8}, i*22);
+  });
+  box.appendChild(s);
+}
+
+/* ---------------- chart: bars grouped under family headings ----------------
+   25 signals in one ranked list would hide the thing that matters — which part
+   of Capio's offer each one points at. Grouping keeps that visible, and each
+   family carries its own reach figure in its heading.                        */
+function famBars(box, groups, opts){
+  box.innerHTML = '';
+  const o = Object.assign({labelW:216, right:80, rowH:26, headH:30, noun:'accounts', denom:1}, opts||{});
+  const nRows = groups.reduce((s,g)=>s+g.rows.length, 0);
+  if(!nRows){ emptyBox(box); return; }
+  const W = boxW(box), trackW = W - o.labelW - o.right;
+  const H = groups.length*o.headH + nRows*o.rowH + 8;
+  const s = svg(W,H);
+  const max = Math.max(1, ...groups.flatMap(g=>g.rows.map(r=>r[1])));
+  let y = 0, di = 0;
+  groups.forEach((g,gi)=>{
+    txt(s,{x:0,y:y+o.headH-11,'class':'famhead'}, g.label.toUpperCase());
+    txt(s,{x:o.labelW,y:y+o.headH-11,'class':'barval',
+           style:`fill:${FAM_COL(gi)};font-weight:600`},
+        `${fmt(g.reach)} of ${fmt(o.denom)} accounts · ${pct(g.reach,o.denom)}%`);
+    s.appendChild(el('line',{x1:0,y1:y+o.headH-5,x2:W,y2:y+o.headH-5,'class':'gridline'}));
+    y += o.headH;
+    g.rows.forEach(e=>{
+      const bh = 12, by = y + (o.rowH-bh)/2;
+      txt(s,{x:0,y:y+o.rowH/2+4,'class':'barlabel',style:'font-size:11.5px'}, clip(e[0], 34));
+      s.appendChild(el('rect',{x:o.labelW,y:by,width:trackW,height:bh,rx:3,'class':'bar-track'}));
+      const bw = Math.max(0, trackW*e[1]/max);
+      const gg = el('g',{'class':'rowhit'});
+      const r = el('rect',{x:o.labelW,y:by,width:0,height:bh,rx:3,fill:FAM_COL(gi),'class':'bseg'});
+      gg.appendChild(r);
+      const vt = txt(s,{x:o.labelW+8,y:y+o.rowH/2+4,'class':'barval'}, `${fmt(e[1])} · ${pct(e[1],o.denom)}%`);
+      gg.appendChild(vt);
+      gg.appendChild(el('rect',{x:0,y:y,width:W,height:o.rowH,fill:'transparent'}));
+      bindTip(gg, `<div class="tt-t">${esc(e[0])}</div>`
+        + `<div class="tt-r">${esc(g.label)} · <b>${fmt(e[1])}</b> ${o.noun} · <b>${pct(e[1],o.denom)}%</b></div>`);
+      s.appendChild(gg);
+      grow(r,{width:bw}, (di++)*14); grow(vt,{x:o.labelW+bw+8}, di*14);
+      y += o.rowH;
+    });
+  });
+  box.appendChild(s);
+}
+
+/* ---------------- chart: donut ---------------- */
+function arcPath(cx,cy,rI,rO,a1,a2){
+  const p = (r,a)=>[cx+r*Math.cos(a), cy+r*Math.sin(a)];
+  const [x1,y1]=p(rO,a1),[x2,y2]=p(rO,a2),[x3,y3]=p(rI,a2),[x4,y4]=p(rI,a1);
+  const laf = (a2-a1) > Math.PI ? 1 : 0;
+  return `M${x1} ${y1}A${rO} ${rO} 0 ${laf} 1 ${x2} ${y2}L${x3} ${y3}A${rI} ${rI} 0 ${laf} 0 ${x4} ${y4}Z`;
+}
+function donut(box, segs, opts){
+  box.innerHTML = '';
+  const o = Object.assign({noun:'accounts', center:'Accounts'}, opts||{});
+  const tot = segs.reduce((a,b)=>a+b.value,0);
+  if(!tot){ emptyBox(box); return; }
+  const W = 460, H = 236, cx = 118, cy = 118, rO = 96, rI = 62;
+  const s = svg(W,H);
+  let ang = -Math.PI/2;
+  const gapA = 0.014; // ~2px surface gap between arcs, not a stroke border
+  segs.forEach(sg=>{
+    if(!sg.value) return;
+    const span = sg.value/tot*2*Math.PI;
+    const a1 = ang + (span > gapA*2 ? gapA : 0), a2 = ang + span;
+    const pe = el('path',{d:arcPath(cx,cy,rI,rO,a1,a2), fill:sg.color, 'class':'rowhit'});
+    bindTip(pe, `<div class="tt-t">${esc(sg.label)}</div><div class="tt-r"><b>${fmt(sg.value)}</b> ${o.noun} · <b>${pct(sg.value,tot)}%</b></div>`);
+    if(!REDUCED){ pe.style.opacity = 0; setTimeout(()=>{ pe.style.transition='opacity .45s'; pe.style.opacity=1; },40); }
+    s.appendChild(pe);
+    ang += span;
+  });
+  txt(s,{x:cx,y:cy-1,'text-anchor':'middle','class':'donut-v'}, fmt(tot));
+  txt(s,{x:cx,y:cy+19,'text-anchor':'middle','class':'donut-l'}, o.center);
+  let ly = 30;
+  const shown = segs.filter(x=>x.value);
+  const step = Math.min(34, Math.floor((H-40)/Math.max(shown.length,1)));
+  shown.forEach(sg=>{
+    s.appendChild(el('rect',{x:250,y:ly-10,width:11,height:11,rx:3,fill:sg.color}));
+    txt(s,{x:269,y:ly,'class':'barlabel',style:'font-size:11.5px'}, clip(sg.label,20));
+    txt(s,{x:W-4,y:ly,'text-anchor':'end','class':'barval'}, `${fmt(sg.value)} · ${pct(sg.value,tot)}%`);
+    ly += step;
+  });
+  box.appendChild(s);
+}
+
+/* ---------------- chart: column histogram ---------------- */
+function cols(box, cats, vals, opts){
+  box.innerHTML = '';
+  const o = Object.assign({axisLabel:'', noun:'accounts', greyFirst:false, catFmt:c=>String(c), W:0}, opts||{});
+  const tot = vals.reduce((a,b)=>a+b,0);
+  if(!tot){ emptyBox(box); return; }
+  const W = o.W || boxW(box), H = 246, left = 40, bottom = 42, top = 18, right = 8;
+  const s = svg(W,H), plotH = H-top-bottom, bw = (W-left-right)/cats.length;
+  const max = Math.max(...vals, 1);
+  for(let g=0; g<=4; g++){
+    const yy = top + plotH*g/4;
+    s.appendChild(el('line',{x1:left,y1:yy,x2:W-right,y2:yy,'class':'gridline'}));
+    txt(s,{x:left-6,y:yy+3,'text-anchor':'end','class':'axis'}, fmt(Math.round(max*(1-g/4))));
+  }
+  cats.forEach((c,i)=>{
+    const cx = left + i*bw, v = vals[i], h = plotH*v/max;
+    const iw = Math.min(bw*0.62, 46), x = cx + bw/2 - iw/2, y = top + plotH - h;
+    const fill = (o.greyFirst && i===0) ? 'var(--pu)' : 'var(--brand)';
+    const r = el('rect',{x,y:top+plotH,width:iw,height:0,rx:4,fill:fill,'class':'bseg rowhit'});
+    bindTip(r, `<div class="tt-t">${esc(o.catFmt(c))}</div><div class="tt-r"><b>${fmt(v)}</b> ${o.noun} · <b>${pct(v,tot)}%</b></div>`);
+    s.appendChild(r);
+    if(v>0) txt(s,{x:cx+bw/2,y:y-6,'text-anchor':'middle','class':'barval',style:'font-size:10px'},
+                 `${fmt(v)} · ${pct(v,tot)}%`);
+    grow(r,{y:y,height:h}, i*22);
+    txt(s,{x:cx+bw/2,y:H-bottom+19,'text-anchor':'middle','class':'axis',
+           style:'font-size:11px;fill:var(--ink-2);font-weight:600'}, String(c));
+  });
+  if(o.axisLabel) txt(s,{x:left+(W-left-right)/2,y:H-5,'text-anchor':'middle','class':'axis-nm'}, o.axisLabel);
+  box.appendChild(s);
+}
+
+/* ---------------- chart: meter rows ---------------- */
+function meters(box, groups){
+  box.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.className = 'mtr';
+  groups.forEach(g=>{
+    if(g.glabel){
+      const h = document.createElement('div'); h.className = 'mtr-glbl';
+      h.innerHTML = `<span>${esc(g.glabel)}</span>` + (g.win
+        ? `<select class="win-sel" data-win="${g.win.key}" aria-label="${esc(g.glabel)} window">${['3','6','12'].map(w=>`<option value="${w}"${w===g.win.cur?' selected':''}>${w}M</option>`).join('')}</select>`
+        : '');
+      wrap.appendChild(h);
+    }
+    g.rows.forEach(r=>{
+      const d = document.createElement('div'); d.className = 'mtr-row' + (r.hot?' hot':'');
+      d.innerHTML = `<div class="mtr-top"><span class="mtr-lbl">${r.label}</span><span class="mtr-val">${pct(r.value,r.of)}%</span></div>
+        <div class="mtr-bar"><i style="width:${pct(r.value,r.of)}%"></i></div>
+        <div class="mtr-sub"><span class="num">${fmt(r.value)}</span> of <span class="num">${fmt(r.of)}</span> ${esc(r.noun||'')}</div>`;
+      bindTip(d, `<div class="tt-t">${esc(r.tip||'')}</div><div class="tt-r"><b>${fmt(r.value)}</b> of <b>${fmt(r.of)}</b> · <b>${pct(r.value,r.of)}%</b></div>`);
+      wrap.appendChild(d);
+    });
+  });
+  box.appendChild(wrap);
+  $$('.win-sel').forEach(sel => sel.addEventListener('change', ()=>{
+    if(sel.dataset.win==='g') S.gWin = sel.value; else S.itWin = sel.value;
+    renderCards();
+  }));
+  bindIntentInput();
+}
+
+/* ---------------- chart: coverage rings ---------------- */
+function ringSVG(p, size){
+  const r = (size-9)/2, c = 2*Math.PI*r, off = c*(1-Math.min(p,100)/100);
+  return `<svg viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px" role="img" aria-label="${p}%">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--track)" stroke-width="7"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--brand)" stroke-width="7" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${size/2} ${size/2})"
+      style="transition:stroke-dashoffset .8s ease"/>
+    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central"
+      style="font-family:var(--fm);font-size:${(size*0.235).toFixed(0)}px;font-weight:600;fill:var(--ink)">${p}%</text></svg>`;
+}
+/* a ring only reads 100% when the metric is actually complete */
+const covPct = (n,d) => (n<d ? Math.min(pct(n,d), 99.9) : pct(n,d));
+function rings(box, tiles){
+  box.innerHTML = '';
+  const grid = document.createElement('div'); grid.className = 'cov-grid';
+  tiles.forEach(t=>{
+    const d = document.createElement('div'); d.className = 'cov-tile';
+    d.innerHTML = `<div class="cov-rings">${ringSVG(covPct(t.n,t.d), 84)}</div>
+      <div class="cov-lbl">${esc(t.label)}</div>
+      <div class="cov-sub">${esc(t.sub)}</div>
+      <div class="cov-sub"><span class="num">${fmt(t.n)}</span> of <span class="num">${fmt(t.d)}</span></div>`;
+    grid.appendChild(d);
+  });
+  box.appendChild(grid);
+}
+
+/* ---------------- chart: table ---------------- */
+function table(box, head, body, note){
+  box.innerHTML = '';
+  if(!body.length){ emptyBox(box); return; }
+  const w = document.createElement('div'); w.className = 'tbl-wrap';
+  w.innerHTML = `<table class="tbl"><thead><tr>${head.map(h=>`<th class="${h.cls||''}">${esc(h.label)}</th>`).join('')}</tr></thead>
+    <tbody>${body.map(r=>`<tr>${r.map(c=>`<td class="${c.cls||''}">${c.html}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  box.appendChild(w);
+  if(note) addNote(box, note);
+}
+
+/* ---------------- intent threshold control ---------------- */
+function intentRowLabel(){
+  return `Active third-party intent
+    <span class="intent-wrap">min score
+      <input class="intent-input num" id="intentInput" type="number" min="0" step="1" value="${S.intentMin}" aria-label="Minimum intent score">
+      <span class="stepper"><button id="intUp" type="button" aria-label="Increase">&#9650;</button><button id="intDn" type="button" aria-label="Decrease">&#9660;</button></span>
+    </span>`;
+}
+function bindIntentInput(){
+  const inp = $('#intentInput'); if(!inp) return;
+  const set = v => { S.intentMin = Math.max(0, Math.round(v)||0); renderCards(); renderKpis();
+                     const i2 = $('#intentInput'); if(i2){ i2.value = S.intentMin; i2.focus(); } };
+  inp.addEventListener('change', e => set(parseInt(e.target.value||'0',10)));
+  $('#intUp').addEventListener('click', ()=>set(S.intentMin+1));
+  $('#intDn').addEventListener('click', ()=>set(S.intentMin-1));
+}
+
+/* ============================================================
+   CARD DEFINITIONS
+   ============================================================ */
+const PRI_INFO = `<span class="info" tabindex="0">i<span class="info-pop">
+  <span class="hd">How Sprouts ranks these accounts</span>
+  <div class="tx" style="margin-bottom:4px">Each account is scored on four independent tests, then tiered on how many hold together:</div>
+  <div class="tx" style="margin-bottom:6px">
+    <b>Device intent</b> &mdash; researching a laptop, workstation, Windows release, AI PC or DaaS.<br>
+    <b>Fleet demand</b> &mdash; hiring in Singapore, a workforce or office change, or an IT team of 50+ to run a rollout.<br>
+    <b>AI programme</b> &mdash; live AI or Copilot activity in Singapore.<br>
+    <b>Modernisation</b> &mdash; automation, transformation, cloud, network, security or resilience work.
+  </div>
+  <div class="row"><span class="p pP0">P0</span><span class="tx"><b>Buying window open</b> &mdash; all four hold: they are pricing devices, they have a fleet and a reason to move it, and there is a programme paying for it.</span></div>
+  <div class="row"><span class="p pP1">P1</span><span class="tx"><b>Live opportunity</b> &mdash; device intent and fleet demand alongside a programme, or a full programme with a workplace rollout already announced.</span></div>
+  <div class="row"><span class="p pP2">P2</span><span class="tx"><b>Building a case</b> &mdash; device intent, or a programme paired with fleet demand or a workplace rollout.</span></div>
+  <div class="row"><span class="p pP3">P3</span><span class="tx"><b>On the radar</b> &mdash; at least one signal, but nothing yet that points at a purchase.</span></div>
+  <div class="row"><span class="p pU">None</span><span class="tx"><b>Unranked</b> &mdash; no signal detected yet.</span></div>
+</span></span>`;
+
+const EOL_INFO = `<span class="info" tabindex="0">i<span class="info-pop">
+  <span class="hd">Why device-level intent is scored separately</span>
+  <div class="tx">Most enrichment signals say a company is <i>busy</i>. Third-party intent on a device topic &mdash; <b>Laptop</b>, <b>Workstations</b>, <b>Windows&nbsp;10</b>, <b>Windows&nbsp;11</b>, <b>AI&nbsp;PC</b>, <b>DaaS</b> or a named ThinkPad, EliteBook or MacBook SKU &mdash; says somebody is costing out a fleet right now. It is the only signal in this sheet that names Capio's own line card, so it carries the most weight in the tiering.
+  <br><br>Windows&nbsp;10 left support in October 2025, so the Windows and AI&nbsp;PC topics carry a date the customer does not control. Those accounts are marked <span class="eol">Windows / AI PC</span> in the table below.</div>
+</span></span>`;
+
+const HC_INFO = `<span class="info" tabindex="0">i<span class="info-pop">
+  <span class="hd">Why the bands are uneven</span>
+  <div class="tx">This portfolio runs from 2 staff to 150,832 &mdash; a median of 519 against a 75th percentile of 5,328. Even bands would put nine accounts in ten into the first bucket, so the bands step roughly by order of magnitude instead. Company headcount sizes the fleet; <b>IT headcount</b>, shown separately, sizes both the buying committee and the team that would have to run a deployment.</div>
+</span></span>`;
+
+const CARDS = [
+  { cls:'c12', title:'Portfolio Data Coverage', desc:'Enrichment quality of the full portfolio · not affected by filters', tag:true,
+    render(box){
+      const c = DATA.summary.cov;
+      rings(box, [
+        {label:'Domain resolved',    n:c.domain, d:c.rows, sub:'accounts mapped to a company domain'},
+        {label:'IT headcount known', n:c.ithc,   d:c.rows, sub:'have an IT team size on file'},
+        {label:'Signal-enriched',    n:c.signal, d:c.rows, sub:'carry at least one buying signal'},
+        {label:'Device-level intent',n:c.device, d:c.rows, sub:'researching a device, OS or desktop service'},
+      ]);
+      const dupes = DATA.summary.dupes || [];
+      if(dupes.length){
+        addNote(box, `<span class="num">${fmt(c.rows)}</span> rows resolve to <span class="num">${fmt(c.distinct)}</span> `
+          + `distinct companies. <b>${dupes.length} domains appear twice</b>, each as the same company under two legal `
+          + `names — the pairs are listed at the foot of this page. Every figure here counts <b>rows</b>, so those five `
+          + `companies are counted twice until the source list is deduplicated.`);
+      }
+    }},
+  { cls:'c7', title:'Buying-Signal Prevalence', desc:'Share of accounts in view showing each signal, grouped by what it points at', tag:true,
+    render(box){
+      const a = rows();
+      if(!a.length) return emptyBox(box);
+      const groups = FAMS.map(([fam, ixs]) => ({
+        label: fam,
+        reach: a.reduce((s,x)=>s+(ixs.some(i=>x.s[i])?1:0),0),
+        rows: ixs.map(i => [SIG[i], a.reduce((s,x)=>s+x.s[i],0)]).sort((p,q)=>q[1]-p[1]),
+      }));
+      famBars(box, groups, {denom:a.length, noun:'accounts'});
+      addNote(box, `A family&rsquo;s reach is the share of accounts carrying <b>at least one</b> of its signals, so it is `
+        + `smaller than the sum of the bars beneath it. Bars are scaled against the single most common signal across `
+        + `all four families, which is what makes the families comparable to each other.`);
+    }},
+  { cls:'c5', title:'Growth, Hiring & Intent', desc:'Momentum indicators · intent threshold and growth window are editable', tag:true,
+    render(box){
+      const a = rows(), n = a.length;
+      if(!n) return emptyBox(box);
+      const over = (k,t) => a.reduce((s,x)=>s+(x[k]!=null && x[k]>t?1:0),0);
+      const atLeast = (k,t) => a.reduce((s,x)=>s+((x[k]||0)>=t?1:0),0);
+      meters(box, [
+        {rows:[{label:intentRowLabel(), value:a.reduce((s,x)=>s+(x['is']>=S.intentMin?1:0),0), of:n,
+                noun:`accounts · score ≥ ${S.intentMin}`, tip:`Third-party intent score ≥ ${S.intentMin}`}]},
+        {glabel:'Open roles', rows:[
+          {label:'Hiring in Singapore', value:atLeast('sh',1), of:n, noun:'accounts', tip:'At least one open Singapore role'},
+          {label:'Hiring anywhere',     value:atLeast('gh',1), of:n, noun:'accounts', tip:'At least one open role globally'},
+        ]},
+        {glabel:'Company headcount growth', win:{key:'g',cur:S.gWin},
+         rows:[5,10].map(t=>({label:`&gt; ${t}%`, value:over('g'+S.gWin,t), of:n, noun:'accounts',
+                              tip:`Company headcount growth (${WINLBL[S.gWin]}) > ${t}%`}))},
+        {glabel:'IT headcount growth', win:{key:'it',cur:S.itWin},
+         rows:[5,10].map(t=>({label:`&gt; ${t}%`, value:over('itg'+S.itWin,t), of:n, noun:'accounts',
+                              tip:`IT headcount growth (${WINLBL[S.itWin]}) > ${t}%`}))},
+      ]);
+      const hcN = a.reduce((s,x)=>s+(x['g'+S.gWin]!=null?1:0),0);
+      const itN = a.reduce((s,x)=>s+(x['itg'+S.itWin]!=null?1:0),0);
+      addNote(box, `Percentages are of all <span class="num">${fmt(n)}</span> accounts in view. Headcount history for `
+        + `this window is available for <span class="num">${fmt(hcN)}</span> of them and IT headcount history for `
+        + `<span class="num">${fmt(itN)}</span>; accounts without history never clear a growth threshold.`);
+    }},
+  { cls:'c5', title:'Account Prioritization', info:PRI_INFO, desc:'Distribution across priority tiers · P0 is hottest', tag:true,
+    render(box){
+      const a = rows(), m = tally(a,'pri');
+      const segs = PRI_ORDER.map(p=>({label:p==='Unranked'?'Unranked':'Priority '+p,
+                                      value:m.get(RX.pri[p])||0, color:PRI_COL(p)}));
+      donut(box, segs, {noun:'accounts', center:'Accounts'});
+      const n = a.length, top = segs[0].value + segs[1].value;
+      if(!n) return;
+      /* The one check that a ranking is ordering something real: mean signal
+         count has to fall monotonically as the tier weakens. Printed rather
+         than asserted, so a future sheet that breaks it is visible here. */
+      const means = PRI_ORDER.map(p=>{
+        const g = a.filter(x=>L.pri[x.pri]===p);
+        return [p, g.length ? g.reduce((s,x)=>s+nsigOf(x),0)/g.length : null];
+      });
+      const mono = means.filter(m=>m[1]!=null).every((m,i,arr)=> i===0 || arr[i-1][1] >= m[1]);
+      const leg = document.createElement('div'); leg.className = 'legend';
+      means.forEach(([p,v],i)=>{
+        const d = document.createElement('div'); d.className = 'li';
+        d.innerHTML = `<span class="sw" style="background:${PRI_COL(p)}"></span>${esc(p)}`
+          + `<span class="lv">${v==null?'—':v.toFixed(1)}</span>`;
+        bindTip(d, `<div class="tt-t">${esc(p)}</div><div class="tt-r">mean of <b>${v==null?'—':v.toFixed(2)}</b> signals per account</div>`);
+        leg.appendChild(d);
+      });
+      box.appendChild(leg);
+      addNote(box, `<span class="num">${fmt(top)}</span> accounts sit in <b>P0 or P1</b> — `
+        + `<span class="num">${pct(top,n)}%</span> of the ${fmt(n)} in view. The figures beside each tier are its `
+        + `<b>mean signal count</b>, and they ${mono ? 'fall with every step' : '<b>do not fall monotonically</b>'} — `
+        + `${mono ? 'which is the check that the ranking is ordering something real rather than reshuffling.'
+                 : 'so on the current filters the tiers are no longer strictly ordered by evidence.'}`);
+    }},
+  { cls:'c7', title:'The Device-Refresh Wedge', info:EOL_INFO, desc:'How many accounts in view are already pricing hardware', tag:'hot',
+    render(box){
+      const a = rows(), n = a.length;
+      if(!n) return emptyBox(box);
+      const c = f => a.reduce((s,x)=>s+(f(x)?1:0),0);
+      meters(box, [
+        {glabel:'Researching a purchase', rows:[
+          {label:'Device-level intent topic', value:c(x=>x.dev), of:n, noun:'accounts', hot:true,
+           tip:'Researching a laptop, workstation, Windows release, AI PC or DaaS'},
+          {label:'Windows or AI PC specifically', value:c(x=>x.eol), of:n, noun:'accounts', hot:true,
+           tip:'Windows 10 support ended October 2025 — a date the customer does not control'},
+        ]},
+        {glabel:'Programme announced', rows:[
+          {label:'Workplace technology programme', value:c(x=>x.s[L_SIX['Workplace technology programme']]), of:n, noun:'accounts',
+           tip:'Has announced a workplace-technology initiative in Singapore'},
+          {label:'Singapore tech deployments', value:c(x=>x.s[L_SIX['Singapore tech deployments']]), of:n, noun:'accounts',
+           tip:'Has deployed technology in Singapore recently'},
+          {label:'New or changed office', value:c(x=>x.s[L_SIX['Singapore office status']] || x.s[L_SIX['Singapore office activity']]), of:n, noun:'accounts',
+           tip:'A new address, a fit-out or an office expansion — the moment a fleet gets specified'},
+        ]},
+        {glabel:'AI PC upsell', rows:[
+          {label:'AI programme live in Singapore', value:c(x=>FAMS[0][1].some(i=>x.s[i])), of:n, noun:'accounts',
+           tip:'Any AI or Copilot activity on the ground in Singapore'},
+          {label:'Copilot already deployed', value:c(x=>x.s[L_SIX['Copilot deployment']]), of:n, noun:'accounts',
+           tip:'Confirmed Microsoft Copilot deployment — already licensed, now needs the hardware'},
+        ]},
+      ]);
+      const both = c(x=>x.dev && FAMS[0][1].some(i=>x.s[i]));
+      addNote(box, `<span class="num">${fmt(both)}</span> accounts in view are researching devices <b>and</b> running an `
+        + `AI programme — the AI PC conversation, where the device budget and the AI budget are the same budget.`);
+    }},
+  { cls:'c6', title:'Signal Intensity per Account', desc:`How many of the ${L_SIG_LABELS.length} distinct signals each account exhibits`, tag:true,
+    render(box){
+      const a = rows(), bins = new Array(SIG.length+1).fill(0);
+      a.forEach(x=>bins[nsigOf(x)]++);
+      // the long tail is mostly empty; fold everything past 12 into one column
+      const CAP = 12;
+      const shown = bins.slice(0, CAP+1);
+      shown[CAP] = bins.slice(CAP).reduce((s,v)=>s+v,0);
+      cols(box, shown.map((_,i)=> i===CAP ? CAP+'+' : i), shown,
+        {axisLabel:'Number of distinct buying signals per account', noun:'accounts', greyFirst:true,
+         catFmt:c=> String(c).endsWith('+') ? `${CAP} or more signals` : `${c} signal${c===1?'':'s'}`});
+      const rich = a.reduce((s,x)=>s+(nsigOf(x)>=CAP?1:0),0);
+      addNote(box, `The first column is the accounts enrichment found nothing on. `
+        + `<span class="num">${fmt(rich)}</span> accounts carry <span class="num">${CAP}</span> or more signals — `
+        + `these are the ones where a discovery call has something to open with.`);
+    }},
+  { cls:'c6', title:'Intent Topics', info:EOL_INFO, desc:'Third-party topics researched by accounts in view · device topics in red · top 12',
+    render(box){
+      const a = rows(), m = new Map();
+      a.forEach(x=>x.t.forEach(t=>m.set(t,(m.get(t)||0)+1)));
+      const e = rankSort([...m].map(([k,v])=>[L.topic[k],v])).slice(0,12);
+      const withIntent = a.filter(x=>x.t.length).length;
+      hbars(box, e, {denom:withIntent||1, noun:'accounts', labelW:230,
+        ramp:i=>L_DEVICE_TOPICS.has(e[i][0]) ? 'var(--accent)' : 'var(--brand)',
+        tipExtra:(en)=>L_DEVICE_TOPICS.has(en[0])
+          ? '<div class="tt-r">Device-level topic — names Capio&rsquo;s own line card</div>' : '',
+        emptyMsg:'No intent topics on the accounts in view.'});
+      if(withIntent) addNote(box, `Percentages are of the <span class="num">${fmt(withIntent)}</span> accounts in view `
+        + `that carry any intent at all, not of all ${fmt(a.length)} — a topic&rsquo;s share of the accounts actually `
+        + `researching something is the useful figure. Red bars name a device, an operating system or a desktop `
+        + `delivery model.`);
+    }},
+  { cls:'c6', title:'Top Industries', desc:'Click a bar to filter · top 10 of the accounts in view',
+    render(box){
+      hbars(box, byLabel(rows(),'ind','ind').slice(0,10),
+        {denom:rows().length, noun:'accounts', labelW:210,
+         onClick:v=>toggleFilter('ind',RX.ind[v]), active:labelSet('ind')});
+    }},
+  { cls:'c6', title:'Headquarters Country', desc:'Where the parent company sits · click a bar to filter · top 10',
+    render(box){
+      const e = byLabel(rows(),'hq','hq').slice(0,10);
+      hbars(box, e, {denom:rows().length, noun:'accounts', labelW:170,
+        onClick:v=>toggleFilter('hq',RX.hq[v]), active:labelSet('hq')});
+      const a = rows();
+      const sg = a.reduce((s,x)=>s+(L.hq[x.hq]==='Singapore'?1:0),0);
+      const pres = a.reduce((s,x)=>s+(x.s[L_SIX['Singapore regional presence']]?1:0),0);
+      if(a.length) addNote(box, `<span class="num">${pct(sg,a.length)}%</span> are Singapore-headquartered. `
+        + `The rest are multinationals with a Singapore operation — a different sale, and often a larger one. `
+        + `<span class="num">${fmt(pres)}</span> accounts in view have a confirmed Singapore regional presence on file.`);
+    }},
+  { cls:'c6', title:'Company Headcount', info:HC_INFO, desc:'The fleet-size proxy · click a bar to filter',
+    render(box){
+      const a = rows(), m = tally(a,'bnd');
+      const e = HCB.filter(b=>RX.bnd[b]!=null).map(b=>[b, m.get(RX.bnd[b])||0]).filter(x=>x[1]);
+      const unk = m.get(RX.bnd['Unknown']); if(unk) e.push(['Unknown', unk]);
+      hbars(box, e, {denom:a.length, noun:'accounts', labelW:160,
+        onClick:v=>toggleFilter('bnd',RX.bnd[v]), active:labelSet('bnd'),
+        ramp:rampBy(e, HCB, 'p')});
+    }},
+  { cls:'c6', title:'IT Organisation Size', desc:'Who would run the deployment · filterable under Advanced',
+    render(box){
+      const a = rows(), m = tally(a,'itb');
+      const e = ITB.filter(b=>RX.itb[b]!=null).map(b=>[b, m.get(RX.itb[b])||0]).filter(x=>x[1]);
+      const unk = m.get(RX.itb['Unknown']); if(unk) e.push(['Unknown', unk]);
+      hbars(box, e, {denom:a.length, noun:'accounts', labelW:160, ramp:rampBy(e, ITB, 'p')});
+      const big = a.reduce((s,x)=>s+((x.ithc!=null && x.ithc>=50)?1:0),0);
+      addNote(box, `An IT team of 50 or more is the threshold this dashboard treats as able to absorb a rollout on its `
+        + `own; <span class="num">${fmt(big)}</span> accounts in view clear it, and it is one of the four tests behind `
+        + `the priority tiers. Below that the deployment and lifecycle services are usually part of the sale rather than `
+        + `an add-on.`);
+    }},
+  { cls:'c6', title:'Reported Revenue', desc:'Annual revenue band · a second read on budget alongside headcount',
+    render(box){
+      const a = rows();
+      const bins = REV_BANDS.map(([lbl,lo,hi]) => [lbl, a.reduce((s,x)=>s+((x.rev!=null && x.rev>=lo && x.rev<hi)?1:0),0)]);
+      const unk = a.reduce((s,x)=>s+(x.rev==null?1:0),0);
+      const e = bins.filter(x=>x[1]); if(unk) e.push(['Unknown', unk]);
+      hbars(box, e, {denom:a.length, noun:'accounts', labelW:160,
+        ramp:rampBy(e, REV_BANDS.map(b=>b[0]), 'p')});
+    }},
+  { cls:'c6', title:'Headcount Momentum', desc:'12-month change in company headcount · a company adding people is adding devices',
+    render(box){
+      const a = rows();
+      const bins = MOM_BANDS.map(([lbl,lo,hi]) => [lbl, a.reduce((s,x)=>s+((x.g12!=null && x.g12>lo && x.g12<=hi)?1:0),0)]);
+      const unk = a.reduce((s,x)=>s+(x.g12==null?1:0),0);
+      const e = bins.filter(x=>x[1]); if(unk) e.push(['No history', unk]);
+      hbars(box, e, {denom:a.length, noun:'accounts', labelW:160,
+        ramp:i=>{ const k = MOM_BANDS.findIndex(b=>b[0]===e[i][0]);
+                  return k < 0 ? 'var(--pu)' : MOM_COL[k]; }});
+      addNote(box, `&ldquo;No history&rdquo; is an account whose headcount 12 months ago cannot be reconstructed from `
+        + `the sheet — the change column is blank, or it implies a base of zero. Those accounts are not counted as flat.`);
+    }},
+  { cls:'c12', title:'Where to Start', desc:'Highest-priority accounts in view · ranked by tier, then signal breadth, IT scale and intent',
+    render(box){
+      const a = rows().slice().sort((x,y)=>{
+        const px = PRI_ORDER.indexOf(L.pri[x.pri]), py = PRI_ORDER.indexOf(L.pri[y.pri]);
+        if(px!==py) return px-py;
+        const sx = nsigOf(x), sy = nsigOf(y);
+        if(sx!==sy) return sy-sx;
+        if((y.ithc||0)!==(x.ithc||0)) return (y.ithc||0)-(x.ithc||0);
+        if(x['is']!==y['is']) return y['is']-x['is'];
+        return (y.hc||0)-(x.hc||0);
+      }).slice(0,25);
+      table(box,
+        [{label:'Account'},{label:'Industry'},{label:'Headcount',cls:'num r'},{label:'IT staff',cls:'num r'},
+         {label:'Signals',cls:'num'},{label:'Intent',cls:'num r'},{label:'Researching'},{label:'Tier'}],
+        a.map(x=>{
+          // the strip is grouped the way the prevalence card is, with a gap
+          // between families, so a dense block reads as "one whole family lit up"
+          let cells = '';
+          FAMS.forEach(([, ixs], gi)=>{
+            if(gi) cells += '<i class="gap"></i>';
+            ixs.forEach(i=>{ cells += `<i class="${x.s[i]?'on':''}" data-sig="${i}" data-on="${x.s[i]}"></i>`; });
+          });
+          const nsig = nsigOf(x);
+          const strip = `<span class="sigstrip" role="img" aria-label="${nsig} of ${SIG.length} signals present">${cells}</span>`;
+          const nmTxt = esc(clip(x.n,40));
+          const dom = x.d ? `<div class="sub">${esc(clip(x.d,34))}</div>` : '';
+          const nm = (x.d ? `<a href="https://${esc(x.d)}" target="_blank" rel="noopener noreferrer">${nmTxt}</a>` : nmTxt) + dom;
+          const res = x.eol ? '<span class="eol">Windows / AI PC</span>'
+                    : x.dev ? '<span class="eol" style="background:var(--brand-soft);color:var(--brand-str)">Devices</span>'
+                    : '<span style="color:var(--muted)">–</span>';
+          return [
+            {html:nm, cls:'nm'},
+            {html:esc(clip(L.ind[x.ind],24)), cls:'dim'},
+            {html:x.hc==null?'–':fmt(x.hc), cls:'num r'},
+            {html:x.ithc==null?'–':fmt(x.ithc), cls:'num r'},
+            {html:strip, cls:'num'},
+            {html:x['is']||'–', cls:'num r'},
+            {html:res},
+            {html:`<span class="pill ${L.pri[x.pri].replace(/\s/g,'')}">${esc(L.pri[x.pri])}</span>`},
+          ];
+        }),
+        `Hover any cell of a signal strip to see which signal it is; the four blocks are the four families, in the same `
+        + `order as the prevalence card. Names link to the company domain, which is the identity this board keys on.`);
+      box.querySelectorAll('.sigstrip i[data-sig]').forEach(cell=>{
+        const i = +cell.dataset.sig, on = cell.dataset.on === '1';
+        bindTip(cell, `<div class="tt-t">${esc(SIG[i])}</div>`
+          + `<div class="tt-r">${esc(L_FAM_OF[i])} · ${on?'<b>signal present</b>':'not detected'}</div>`);
+      });
+    }},
+  { cls:'c12', title:'Duplicate Rows to Merge', desc:'The same company entered twice under two legal names · not affected by filters',
+    when: () => (DATA.summary.dupes||[]).length > 0,
+    render(box){
+      const dupes = DATA.summary.dupes || [];
+      const byDom = new Map(); ACC.forEach(x=>{ if(!byDom.has(x.d)) byDom.set(x.d, x); });
+      table(box,
+        [{label:'Domain'},{label:'Entered as'},{label:'Headcount',cls:'num r'},{label:'Industry'}],
+        dupes.map(([dm, names])=>{
+          const x = byDom.get(dm);
+          return [
+            {html:`<a href="https://${esc(dm)}" target="_blank" rel="noopener noreferrer">${esc(dm)}</a>`, cls:'nm'},
+            {html:names.map(esc).join(' <span style="color:var(--muted)">/</span> '), cls:'dim', },
+            {html:x && x.hc!=null ? fmt(x.hc) : '–', cls:'num r'},
+            {html:x ? esc(clip(L.ind[x.ind],30)) : '–', cls:'dim'},
+          ];
+        }),
+        `Both rows carry the same domain and the same headcount, so they are one company counted twice. Until the source `
+        + `sheet is deduplicated, every count on this page is of <b>rows</b> — which is why the masthead reports accounts `
+        + `and companies as two different numbers.`);
+    }},
+];
+const cards = () => CARDS.filter(c => !c.when || c.when());
+
+/* ============================================================
+   KPIs
+   ============================================================ */
+function kpiSpecs(){
+  const a = rows(), n = a.length;
+  const c = f => a.reduce((s,x)=>s+(f(x)?1:0),0);
+  const p01 = c(x=>['P0','P1'].includes(L.pri[x.pri]));
+  const dev = c(x=>x.dev);
+  const ai  = c(x=>FAMS[0][1].some(i=>x.s[i]));
+  const fleet = c(x=>x.ithc!=null && x.ithc>=50);
+  return [
+    {l:'Accounts in view', v:fmt(n), sub:`of <span class="num">${fmt(total())}</span> in the portfolio`},
+    {l:'Priority P0 + P1', v:pct(p01,n), u:'%', sub:`<span class="num">${fmt(p01)}</span> accounts worth a call this quarter`},
+    {l:'Pricing hardware now', v:pct(dev,n), u:'%', hot:true, sub:`<span class="num">${fmt(dev)}</span> with device-level intent`},
+    {l:'AI programme live', v:pct(ai,n), u:'%', sub:`<span class="num">${fmt(ai)}</span> accounts &mdash; the AI PC opening`},
+    {l:'IT team of 50+', v:pct(fleet,n), u:'%', sub:`<span class="num">${fmt(fleet)}</span> can run their own rollout`},
+  ];
+}
+function renderKpis(){
+  const box = $('#kpis'); box.innerHTML = '';
+  kpiSpecs().forEach(c=>{
+    const d = document.createElement('div'); d.className = 'kpi' + (c.hot?' hot':'');
+    d.innerHTML = `<div class="k-lbl">${c.l}</div><div class="k-val">${c.v}<span class="u">${c.u||''}</span></div><div class="k-sub">${c.sub}</div>`;
+    box.appendChild(d);
+  });
+}
+
+/* ============================================================
+   Cards / grid
+   ============================================================ */
+function renderCards(){
+  const grid = $('#grid'); grid.innerHTML = '';
+  cards().forEach(c=>{
+    const card = document.createElement('div'); card.className = 'card ' + c.cls;
+    const tag = c.tag === 'hot' ? '<div class="tag hot">Refresh</div>' : c.tag ? '<div class="tag">Portfolio</div>' : '';
+    card.innerHTML = `<div class="card-h"><div><div class="card-t">${esc(c.title)}${c.info||''}</div>
+      <div class="card-d">${c.desc}</div></div>${tag}</div><div class="chart"></div>`;
+    grid.appendChild(card);
+    try { c.render(card.querySelector('.chart')); }
+    catch(err){ card.querySelector('.chart').innerHTML = `<div class="empty">Could not draw this chart.</div>`; console.error(c.title, err); }
+  });
+}
+
+/* ============================================================
+   Filters
+   ============================================================ */
+const fspec = slot => FILTERS[slot];
+function labelSet(key){
+  const spec = FILTERS.find(f=>f.key===key);
+  if(!spec) return new Set();
+  return new Set([...S[key]].map(i=>L[spec.dict][i]));
+}
+function optionUniverse(slot){
+  const {key, dict} = fspec(slot);
+  const m = tally(ACC, key), out = [];
+  for(const [k,v] of m) out.push([L[dict][k], v, k]);
+  if(dict==='bnd'){
+    return out.sort((a,b)=>{ const ia=HCB.indexOf(a[0]), ib=HCB.indexOf(b[0]);
+      return (ia<0?99:ia)-(ib<0?99:ib); });
+  }
+  return out.sort((a,b)=>{ const pa=isPlace(a[0]), pb=isPlace(b[0]);
+    if(pa!==pb) return pa?1:-1; return b[1]-a[1]; });
+}
+function toggleFilter(key, ix){
+  if(ix==null) return;
+  const set = S[key]; if(!set) return;
+  set.has(ix) ? set.delete(ix) : set.add(ix);
+  renderAll();
+}
+function buildPanel(slotId, btn){
+  const fg = btn.parentElement;
+  let panel = fg.querySelector('.panel');
+  if(panel){ panel.classList.toggle('open'); closeOthers(panel); return; }
+  if(slotId==='adv'){ buildAdvPanel(fg); return; }
+  const slot = +slotId.slice(1), spec = fspec(slot);
+  panel = document.createElement('div'); panel.className = 'panel open';
+  const setRef = S[spec.key], opts = optionUniverse(slot);
+  panel.innerHTML = `<div class="panel-search"><input type="text" placeholder="Search ${esc(spec.plural)}…" aria-label="Search ${esc(spec.plural)}"></div>
+    <div class="opts"></div><div class="panel-foot"><button class="mut" data-clr>Clear</button><button data-done>Done</button></div>`;
+  const optsBox = panel.querySelector('.opts');
+  function paint(q){
+    optsBox.innerHTML = '';
+    const ql = q.toLowerCase();
+    const list = opts.filter(o=>o[0].toLowerCase().includes(ql)).slice(0,300);
+    list.forEach(o=>{
+      const d = document.createElement('div');
+      d.className = 'opt' + (setRef.has(o[2])?' on':'') + (isPlace(o[0])?' ph':'');
+      d.innerHTML = `<div class="box"></div><div class="nm" title="${esc(o[0])}">${esc(o[0])}</div><div class="qty">${fmt(o[1])}</div>`;
+      d.addEventListener('click', ()=>{ setRef.has(o[2]) ? setRef.delete(o[2]) : setRef.add(o[2]); d.classList.toggle('on'); renderAll(); });
+      optsBox.appendChild(d);
+    });
+    if(!optsBox.children.length) optsBox.innerHTML = '<div class="empty" style="padding:20px">No matches</div>';
+  }
+  paint('');
+  panel.querySelector('input').addEventListener('input', e=>paint(e.target.value));
+  panel.querySelector('[data-clr]').addEventListener('click', ()=>{ setRef.clear(); paint(panel.querySelector('input').value); renderAll(); });
+  panel.querySelector('[data-done]').addEventListener('click', ()=>panel.classList.remove('open'));
+  fg.appendChild(panel); closeOthers(panel);
+}
+function closeOthers(open){ $$('.panel').forEach(p=>{ if(p!==open) p.classList.remove('open'); }); }
+function syncFilterButtons(){
+  FILTERS.forEach((spec, slot)=>{
+    const set = S[spec.key], btn = document.querySelector(`.fbtn[data-f="f${slot}"]`);
+    const t = btn.querySelector('.ftxt');
+    btn.querySelector('.lbl').textContent = spec.label + ':';
+    if(!set.size){ btn.classList.remove('has'); t.textContent = 'All'; return; }
+    btn.classList.add('has');
+    const first = L[spec.dict][[...set][0]] || '';
+    t.innerHTML = (set.size===1 ? esc(clip(first,16)) : set.size+' selected') + ` <span class="cnt">${set.size}</span>`;
+  });
+}
+
+/* ---------------- advanced cohort builder ---------------- */
+const firstField = () => Object.keys(FIELDS())[0];
+function newCond(){ const k = firstField(), d = FIELDS()[k].def;
+  return {field:k, op:d.op, val:Array.isArray(d.val)?d.val.slice():d.val}; }
+function renderCohort(){
+  const body = $('#adv-body'); if(!body) return;
+  body.innerHTML = '';
+  const groups = S.cohort.groups;
+  if(!groups.length){
+    const e = document.createElement('div'); e.className = 'cohort-empty';
+    e.innerHTML = `<p>No conditions yet. Build a segment such as <b>Researching devices is yes</b> AND
+      <b>IT headcount &ge; 50</b> AND <b>signal family has all of AI &amp; Copilot Readiness, IT Modernisation</b>.
+      Conditions inside a group are combined with AND; groups are combined with OR.</p>
+      <button class="btn-add-group" id="firstGroup">+ Add your first condition</button>`;
+    body.appendChild(e);
+    $('#firstGroup').addEventListener('click', ()=>{ groups.push({conds:[newCond()]}); renderCohort(); renderAll(); });
+    return;
+  }
+  const wrap = document.createElement('div'); wrap.className = 'cg-wrap';
+  groups.forEach((g,gi)=>{
+    if(gi>0){ const o = document.createElement('div'); o.className='cg-or'; o.textContent='OR'; wrap.appendChild(o); }
+    const box = document.createElement('div'); box.className = 'cg';
+    const head = document.createElement('div'); head.className = 'cg-head';
+    head.innerHTML = `Group ${gi+1} — match <span class="allof">ALL</span> of:`;
+    box.appendChild(head);
+    if(groups.length>1){
+      const del = document.createElement('button'); del.className='cg-del'; del.innerHTML='&times;'; del.title='Remove group';
+      del.addEventListener('click', ()=>{ groups.splice(gi,1); renderCohort(); renderAll(); });
+      box.appendChild(del);
+    }
+    g.conds.forEach((c,ci)=>box.appendChild(condRow(g,c,gi,ci)));
+    const add = document.createElement('button'); add.className='cg-add'; add.textContent='+ AND condition';
+    add.addEventListener('click', ()=>{ g.conds.push(newCond()); renderCohort(); renderAll(); });
+    box.appendChild(add);
+    wrap.appendChild(box);
+  });
+  body.appendChild(wrap);
+}
+function condRow(g,c,gi,ci){
+  const FL = FIELDS();
+  const row = document.createElement('div'); row.className = 'cond';
+  const and = document.createElement('span'); and.className='andchip'; and.textContent = ci===0?'':'AND'; row.appendChild(and);
+  const fsel = document.createElement('select'); fsel.className='c-field'; fsel.setAttribute('aria-label','Field');
+  for(const k in FL){ const o=document.createElement('option'); o.value=k; o.textContent=FL[k].label; if(k===c.field)o.selected=true; fsel.appendChild(o); }
+  fsel.addEventListener('change', ()=>{ c.field=fsel.value; const d=FL[c.field].def;
+    c.op=d.op; c.val=Array.isArray(d.val)?d.val.slice():d.val; renderCohort(); renderAll(); });
+  row.appendChild(fsel);
+  const type = FL[c.field].type, ops = opsFor(type);
+  const osel = document.createElement('select'); osel.className='c-op'; osel.setAttribute('aria-label','Operator');
+  for(const k in ops){ const o=document.createElement('option'); o.value=k; o.textContent=ops[k]; if(k===c.op)o.selected=true; osel.appendChild(o); }
+  osel.addEventListener('change', ()=>{
+    const nowMulti = isMultiOp(osel.value); c.op = osel.value;
+    if(nowMulti && !Array.isArray(c.val)) c.val = (c.val===''||c.val==null)?[]:[String(c.val)];
+    if(!nowMulti && Array.isArray(c.val)) c.val = c.val.length ? c.val[0] : '';
+    renderCohort(); renderAll();
+  });
+  row.appendChild(osel);
+  if(type==='num'){
+    const inp=document.createElement('input'); inp.className='c-val num'; inp.type='number'; inp.value=c.val; inp.setAttribute('aria-label','Value');
+    inp.addEventListener('change', ()=>{ c.val=inp.value; renderAll(); });
+    row.appendChild(inp);
+    if(FL[c.field].unit){ const u=document.createElement('span');
+      u.style.cssText='font-family:var(--fm);font-size:11.5px;font-weight:600;color:var(--muted)'; u.textContent=FL[c.field].unit; row.appendChild(u); }
+  } else if(type==='bool'){
+    const vsel=document.createElement('select'); vsel.className='c-val'; vsel.setAttribute('aria-label','Value');
+    BOOL_VALS.forEach(([v,l])=>{ const o=document.createElement('option'); o.value=v; o.textContent=l; if(v===String(c.val))o.selected=true; vsel.appendChild(o); });
+    vsel.addEventListener('change', ()=>{ c.val=vsel.value; renderAll(); });
+    row.appendChild(vsel);
+  } else {
+    const chips=document.createElement('div'); chips.className='mschips';
+    const sel=new Set(asArr(c.val).map(String));
+    FL[c.field].opts().forEach(([v,l])=>{
+      const ch=document.createElement('button'); ch.type='button'; ch.className='mschip'+(sel.has(v)?' on':''); ch.textContent=l;
+      ch.addEventListener('click', ()=>{ sel.has(v)?sel.delete(v):sel.add(v); c.val=[...sel]; ch.classList.toggle('on'); renderAll(); });
+      chips.appendChild(ch);
+    });
+    row.appendChild(chips);
+  }
+  const del=document.createElement('button'); del.className='c-del'; del.innerHTML='&times;'; del.title='Remove condition';
+  del.addEventListener('click', ()=>{ g.conds.splice(ci,1); if(!g.conds.length) S.cohort.groups.splice(gi,1); renderCohort(); renderAll(); });
+  row.appendChild(del);
+  return row;
+}
+function buildAdvPanel(fg){
+  const panel = document.createElement('div'); panel.className='panel adv open';
+  panel.innerHTML = `<div class="adv-head"><div class="t">Advanced cohort filter
+      <div class="d">AND within a group · OR across groups · applies to every card on the page</div></div>
+    <div class="m" id="advMatch"></div></div>
+    <div class="adv-body" id="adv-body"></div>
+    <div class="adv-foot"><button class="btn-add-group" id="addGroup">+ OR group</button>
+      <button class="btn-clear-cohort" id="clearCohort">Clear</button>
+      <button data-done style="margin-left:auto;background:var(--mast);color:var(--mast-ink);border:0;border-radius:9px;padding:9px 18px;font-family:var(--f);font-size:12px;font-weight:700;cursor:pointer">Done</button></div>`;
+  fg.appendChild(panel); closeOthers(panel);
+  const fgr = fg.getBoundingClientRect(), w = Math.min(680, innerWidth-24);
+  const leftVp = Math.max(12, Math.min(fgr.right-w, innerWidth-w-12));
+  panel.style.left = (leftVp-fgr.left)+'px'; panel.style.right='auto'; panel.style.width = w+'px';
+  panel.querySelector('#addGroup').addEventListener('click', ()=>{ S.cohort.groups.push({conds:[newCond()]}); renderCohort(); renderAll(); });
+  panel.querySelector('#clearCohort').addEventListener('click', ()=>{ S.cohort.groups = []; renderCohort(); renderAll(); });
+  panel.querySelector('[data-done]').addEventListener('click', ()=>panel.classList.remove('open'));
+  renderCohort(); updateAdvUI();
+}
+function updateAdvUI(){
+  const active = cohortActive();
+  const nConds = S.cohort.groups.reduce((s,g)=>s+g.conds.length,0);
+  const btn = document.querySelector('.fbtn[data-f="adv"]');
+  if(btn){ btn.classList.toggle('has', active);
+    btn.querySelector('.ftxt').innerHTML = active ? `<span class="cnt">${nConds}</span>` : ''; }
+  const m = $('#advMatch'); if(!m) return;
+  if(!active){ m.innerHTML = `<div class="v" style="color:var(--muted)">—</div><div class="l">no cohort set</div>`; return; }
+  m.innerHTML = `<div class="v">${fmt(rows().length)}</div><div class="l">of ${fmt(total())} accounts match</div>`;
+}
+
+/* ============================================================
+   chrome + render
+   ============================================================ */
+function updateScount(){
+  $('#scount').innerHTML = `Showing <b>${fmt(rows().length)}</b> of <b>${fmt(total())}</b> accounts`;
+}
+const NODATA = () => !DATA.accounts.n;
+
+/* The boot panel stands in for the whole board until the first read lands, and
+   again if that read fails — better than a grid of cards all reading zero. The
+   reason for a failure is held here so a re-render redraws the explanation
+   rather than dropping back to a spinner that is not spinning. */
+let bootErr = null;
+function renderBoot(failed, why){
+  if(failed) bootErr = why || '';
+  else if(bootErr != null) { failed = true; why = bootErr; }
+  document.body.classList.add('booting');
+  $('#kpis').innerHTML = '';
+  $('#grid').innerHTML =
+    `<div class="card boot${failed ? ' failed' : ''}"><div class="boot-in">`
+    + `<div class="boot-spin"></div><div>`
+    + `<div class="boot-t">${failed ? 'Could not reach the Google Sheet' : 'Reading the Google Sheet…'}</div>`
+    + `<div class="boot-d">${failed
+        ? (why ? esc(why) + '. ' : '')
+          + 'Nothing is cached in the page itself, so there is nothing to show yet. '
+          + 'It retries automatically; the pill above forces a retry now.'
+        : 'This page carries no embedded copy of the data — it reads the sheet live, '
+          + 'derives the board in your browser, and re-reads every '
+          + Math.round(REFRESH_MS/1000) + ' seconds.'}</div>`
+    + `</div></div></div>`;
+}
+
+function renderAll(){
+  if(NODATA()){ renderBoot(false); syncFilterButtons(); return; }
+  document.body.classList.remove('booting');
+  renderKpis(); renderCards(); updateScount(); updateAdvUI(); syncFilterButtons();
+}
+
+/* theme: system -> light -> dark -> system */
+const THEMES = ['system','light','dark'], TICON = {system:'☼',light:'☀',dark:'☽'};
+let themeIx = 0;
+$('#themebtn').addEventListener('click', ()=>{
+  themeIx = (themeIx+1)%3;
+  const t = THEMES[themeIx];
+  if(t==='system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+  $('#themebtn').innerHTML = TICON[t];
+  $('#themebtn').title = `Theme: ${t}`;
+});
+$$('.fbtn').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); buildPanel(b.dataset.f, b); }));
+document.addEventListener('click', e=>{
+  if(!e.target.isConnected) return;          // node was re-rendered away, not an outside click
+  if(e.target.closest('.fgroup')) return;    // inside a panel
+  $$('.panel').forEach(p=>p.classList.remove('open'));
+});
+$('#reset').addEventListener('click', ()=>{
+  FILTERS.forEach(({key}) => S[key].clear());
+  S.cohort.groups = [];
+  S.intentMin = 1; S.gWin = '12'; S.itWin = '12';
+  $$('.panel').forEach(p=>p.remove());
+  renderAll();
+});
+window.addEventListener('mousemove', e=>{ if(tip.style.opacity>0) moveTip(e); });
+window.addEventListener('keydown', e=>{ if(e.key==='Escape') $$('.panel').forEach(p=>p.classList.remove('open')); });
+
+$('#themebtn').innerHTML = TICON.system;
+
+/* the filter rail sticks directly under the masthead, whose height changes when
+   the counters wrap onto their own line — measure it instead of guessing */
+const stick = () => document.documentElement.style.setProperty('--mastH',
+  $('header.top').offsetHeight + 'px');
+stick();
+addEventListener('resize', stick);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(stick);
+
+function renderChrome(){
+  const c = DATA.summary.cov || {};
+  if(NODATA()){
+    ['ps-rows','ps-comp','ps-sig'].forEach(id => $('#'+id).innerHTML = '&mdash;');
+    $('#foot-src').innerHTML = 'Source: Google Sheet &middot; read live, nothing cached in this page';
+    return;
+  }
+  $('#ps-rows').textContent = fmt(DATA.accounts.n);
+  $('#ps-comp').textContent = fmt(c.distinct || DATA.accounts.n);
+  $('#ps-sig').textContent  = pct(c.signal||0, c.rows||1) + '%';
+  $('#foot-src').innerHTML =
+      `Source: Google Sheet &middot; <b>${fmt(DATA.accounts.n)}</b> account rows`
+    + ` &middot; <b>${fmt(c.distinct||0)}</b> distinct companies`
+    + ` &middot; <b>${fmt(SIG.length)}</b> enrichment signals`;
+}
+renderChrome();
+renderAll();
+
+/* ============================================================
+   Live sync — re-derive from the sheet every REFRESH_MS
+   ============================================================ */
+/* Change detection fingerprints only the positional arrays and the dictionary
+   lists. Object key order differs between a Python-built snapshot and the
+   browser-built rebuild, so stringifying the whole payload would always
+   "differ" on the first sync even when the sheet is untouched. */
+const FP_KEYS = ['ind','hq','bnd','itb','pri','topic'];
+const fingerprint = raw => JSON.stringify([raw.accounts.rows, FP_KEYS.map(k => raw.dict[k] || [])]);
+let lastPayload = SNAPSHOT ? fingerprint(SNAPSHOT) : null;
+let syncing = false, pendingRaw = null, lastSyncAt = null;
+
+const liveEl = () => $('#live');
+function setLive(state, detail){
+  const el = liveEl(); if(!el) return;
+  el.dataset.state = state;
+  el.querySelector('.lt').textContent = ({syncing:'Syncing…', live:'Live', deferred:'Update ready',
+    stale:'Stale', snapshot:'Snapshot'})[state] || state;
+  el.title = detail || '';
+}
+const clockOf = d => d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+function panelOpen(){ return !!document.querySelector('.panel.open'); }
+
+function applyRaw(raw){
+  bootErr = null;
+  const y = window.scrollY;
+  adopt(raw);
+  renderChrome();
+  renderAll();
+  window.scrollTo(0, y);
+  lastSyncAt = new Date();
+  setLive('live', `Sheet re-read at ${clockOf(lastSyncAt)} · refreshes every ${Math.round(REFRESH_MS/1000)}s`);
+}
+
+async function sync(){
+  if(syncing) return;
+  syncing = true;
+  if(lastSyncAt === null) setLive('syncing', 'Reading the Google Sheet…');
+  try{
+    // no-store only on the direct path; the proxy is meant to be edge-cached
+    const opts = DIRECT ? {cache:'no-store'} : {};
+    /* api/sheet.js answers failures with a plain-text reason. Surfacing that
+       verbatim is the difference between "it broke" and a message that names
+       what to go and fix. */
+    const res = await fetch(sourceUrl('accounts'), opts);
+    if(!res.ok){
+      const why = (await res.text().catch(()=>'')).trim().slice(0, 200);
+      throw new Error(`the sheet responded ${res.status}${why ? ' — ' + why : ''}`);
+    }
+    const raw = buildData(await res.text());
+    const payload = fingerprint(raw);
+    if(payload === lastPayload){
+      lastSyncAt = new Date();
+      setLive('live', `No change · last checked ${clockOf(lastSyncAt)}`);
+    } else {
+      lastPayload = payload;
+      // don't yank a filter panel out from under the user mid-selection
+      if(panelOpen()){
+        pendingRaw = raw;
+        setLive('deferred', 'The sheet changed — applying as soon as this menu closes');
+      } else {
+        applyRaw(raw);
+      }
+    }
+  }catch(err){
+    console.warn('live sync failed:', err);
+    if(lastSyncAt){
+      setLive('stale', `Could not reach the sheet · showing data from ${clockOf(lastSyncAt)}`);
+    } else {
+      // nothing has ever loaded, so there is no earlier reading to fall back on
+      setLive('stale', `Could not reach the sheet · ${err.message}`);
+      renderBoot(true, err.message);
+    }
+  }finally{ syncing = false; }
+}
+
+/* a deferred update lands once every panel is closed */
+setInterval(()=>{ if(pendingRaw && !panelOpen()){ const r = pendingRaw; pendingRaw = null; applyRaw(r); } }, 1000);
+setInterval(()=>{ if(!document.hidden) sync(); }, REFRESH_MS);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) sync(); });
+liveEl().addEventListener('click', sync);
+setLive('syncing', 'Reading the Google Sheet…');
+sync();
+</script>
+</body>
+</html>

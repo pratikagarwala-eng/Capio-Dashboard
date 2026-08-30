@@ -1,0 +1,8 @@
+# Build tooling never reaches the deployment. A static host serves whatever is in
+# the project root, and these three files carry the spreadsheet id in plain text —
+# leaving them in would defeat the point of the api/sheet.js proxy.
+build_data.py
+serve.py
+README.md
+.claude/
+__pycache__/

@@ -1,0 +1,5 @@
+# This deployment renders a private commercial account list. It is kept out of
+# search indexes here and by the x-robots-tag header in vercel.json — neither is
+# access control. Use Vercel Deployment Protection for that.
+User-agent: *
+Disallow: /
