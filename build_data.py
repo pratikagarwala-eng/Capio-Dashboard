@@ -162,6 +162,43 @@ REV_BANDS = [('< $10M', 0, 1e7), ('$10 – 100M', 1e7, 1e8), ('$100M – 1B', 1e
              ('$1 – 10B', 1e9, 1e10), ('$10B+', 1e10, float('inf'))]
 
 
+# ---------------------------------------------------------------- the tiering
+# Five tests, defined once against a derived row. index.html hoists the same five
+# to module scope and renders their descriptions on the page, so the dashboard
+# cannot describe a rule the scoring does not apply.
+TESTS = [
+    ('dev',     'Device intent',
+     lambda x: bool(x['dev'])),
+    ('fleet',   'Fleet demand',
+     lambda x: bool(x['sh'] >= 1 or x['s'][SIX['Workforce expansion']]
+                    or x['s'][SIX['Singapore hiring trend']]
+                    or x['s'][SIX['Singapore office status']]
+                    or x['s'][SIX['Singapore office activity']]
+                    or (x['ithc'] is not None and x['ithc'] >= 50))),
+    ('ai',      'AI programme',
+     lambda x: any(x['s'][i] for i in FAM_IX['AI & Copilot Readiness'])),
+    ('modern',  'Modernisation',
+     lambda x: any(x['s'][i] for i in FAM_IX['IT Modernisation'])),
+    ('rollout', 'Rollout announced',
+     lambda x: bool(x['s'][SIX['Workplace technology programme']]
+                    or x['s'][SIX['Singapore tech deployments']])),
+]
+
+
+def tier(x):
+    """x needs s, dev, sh and ithc set; nothing else is read."""
+    A, B, C, D, E = (t[2](x) for t in TESTS)
+    if A and B and C and D:
+        return 'P0'
+    if (A and B and (C or D or E)) or (B and C and D and E):
+        return 'P1'
+    if (A and (B or C or D or E)) or (B and (C or D)) or (E and (C or D)):
+        return 'P2'
+    if sum(x['s']) >= 1 or A:
+        return 'P3'
+    return 'Unranked'
+
+
 def growth_pct(now, delta):
     """The (nM) columns hold an absolute change; express it against the base it
        grew from. floor(x + .5) because JavaScript rounds halves toward +inf and
@@ -214,7 +251,6 @@ def derive(hdr, rows_in):
         dom = clean(r[a['Domain']]).lower()
 
         s = [1 if norm_txt(r[i]) else 0 for i in sig_ix]
-        nsig = sum(s)
 
         ints = int(num(r[a['Intent Score']]) or 0)
         tps = [t.strip() for t in clean(r[a['Intent Topics']]).split(',') if t.strip()]
@@ -237,33 +273,7 @@ def derive(hdr, rows_in):
         dev = 1 if (set(tps) & DEVICE_TOPICS) else 0
         eol = 1 if (set(tps) & EOL_TOPICS) else 0
 
-        # ---- the five tests the priority tiers are built from ----------------
-        # A  a device-level purchase is already being researched
-        A = bool(dev)
-        # B  there is a fleet to serve, and something is moving it: local hiring,
-        #    a workforce or office change, or an IT org big enough to run a rollout
-        B = bool(sh >= 1 or s[SIX['Workforce expansion']] or s[SIX['Singapore hiring trend']]
-                 or s[SIX['Singapore office status']] or s[SIX['Singapore office activity']]
-                 or (ithc is not None and ithc >= 50))
-        # C  an AI programme is live — the AI PC and Copilot-device conversation
-        C = any(s[i] for i in FAM_IX['AI & Copilot Readiness'])
-        # D  an IT modernisation programme is live — services and the LGA cross-sell
-        D = any(s[i] for i in FAM_IX['IT Modernisation'])
-        # E  a workplace or deployment programme has been announced
-        E = bool(s[SIX['Workplace technology programme']] or s[SIX['Singapore tech deployments']])
-
-        if A and B and C and D:
-            pri = 'P0'
-        elif (A and B and (C or D or E)) or (B and C and D and E):
-            pri = 'P1'
-        elif (A and (B or C or D or E)) or (B and (C or D)) or (E and (C or D)):
-            pri = 'P2'
-        elif nsig >= 1 or A:
-            pri = 'P3'
-        else:
-            pri = 'Unranked'
-
-        out.append({
+        rec = {
             'n': name, 'd': dom, 'ind': title(r[a['Industry']]), 'hq': hq,
             'bnd': hc_band(hc), 'itb': it_band(ithc),
             'hc': None if hc is None else int(hc),
@@ -275,11 +285,12 @@ def derive(hdr, rows_in):
             'dev': dev, 'eol': eol,
             'sh': sh, 'gh': gh,
             'li': 1 if clean(r[a['Linkedin URL']]) else 0,
-            'pri': pri,
             'dn': 1 if name_freq[name.lower()] > 1 else 0,
             'dd': 1 if (dom and dom_freq[dom] > 1) else 0,
             's': s,
-        })
+        }
+        rec['pri'] = tier(rec)
+        out.append(rec)
     # the same company listed twice under two legal names: same domain, same
     # headcount, two rows. Named here so the dashboard can show them rather than
     # quietly counting one company as two accounts.

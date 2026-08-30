@@ -148,24 +148,34 @@ Capio sells enterprise hardware — business laptops, workstations, servers and
 peripherals — plus deployment, maintenance and lifecycle services, and through LGA
 International the networking, cloud, security and managed-IT wrap around them.
 
-Each account is scored on four independent tests:
+Each account is scored on **five independent tests**:
 
 | Test | True when |
 |---|---|
-| **Device intent** | a third-party intent topic names a device, an OS or a desktop delivery model |
-| **Fleet demand** | hiring in Singapore, a workforce or office change, or an IT team of 50+ |
+| **Device intent** | a third-party intent topic names a laptop, workstation, Windows release, AI PC or desktop service |
+| **Fleet demand** | hiring in Singapore, a workforce or office change, or an IT team of 50 or more |
 | **AI programme** | any AI or Copilot activity live in Singapore |
-| **Modernisation** | automation, transformation, cloud, network, security or resilience work |
+| **Modernisation** | automation, transformation, cloud, network, security or resilience work under way |
+| **Rollout announced** | a workplace-technology programme, or technology already deployed in Singapore |
 
-and tiered on how many hold together:
+and tiered on which combination holds. Rules are evaluated top down, so every
+account lands in exactly one tier:
 
 | Tier | Rule |
 |---|---|
-| **P0** | all four — they are pricing devices, they have a fleet and a reason to move it, and there is a programme paying for it |
-| **P1** | device intent and fleet demand alongside a programme, or a full programme with a workplace rollout already announced |
-| **P2** | device intent, or a programme paired with fleet demand or a workplace rollout |
-| **P3** | at least one signal, but nothing yet that points at a purchase |
-| **Unranked** | no signal detected |
+| **P0** | Device intent **and** Fleet demand **and** AI programme **and** Modernisation — all four at once |
+| **P1** | Device intent and Fleet demand plus at least one of AI programme, Modernisation or Rollout announced — or Fleet demand with all three programmes running together |
+| **P2** | Device intent alongside any one other test — or Fleet demand or Rollout announced alongside AI programme or Modernisation |
+| **P3** | at least one enrichment signal of any kind, or Device intent on its own |
+| **Unranked** | no signal detected, and no intent topic naming a device |
+
+All of this is stated on the page itself, in the **How Accounts Are Ranked**
+card — the five tests with live pass rates and the five tier rules, both
+recomputed against whatever the filters currently select. The tests and the
+tiering live in one place in each implementation (`TESTS` / `tier()` in
+`build_data.py`, `L_TESTS` / `L_TIERS` / `L_tier()` in `index.html`) and the card
+renders the same descriptions the scoring uses, so the page cannot describe a
+rule it does not apply.
 
 Spread as at 2026-08-31: **P0 42 · P1 42 · P2 74 · P3 66 · Unranked 17**. It drifts
 as the sheet is enriched, and the dashboard always shows the current split.

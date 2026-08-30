@@ -252,15 +252,18 @@ body.booting .fbtn,body.booting .reset{opacity:.45;pointer-events:none}
 .note b{color:var(--ink-2)}
 
 /* info popover */
-.info{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);font-size:9.5px;font-weight:700;
-  display:inline-flex;align-items:center;justify-content:center;cursor:help;position:relative;flex:none;font-family:var(--fm)}
-.info:hover,.info:focus{border-color:var(--brand);color:var(--brand-str)}
+/* Hover alone hides an explanation from anyone on a touch screen and snatches it
+   away the moment the pointer drifts, so these also latch open on click. */
+.info{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);font-size:10px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex:none;font-family:var(--fm)}
+.info:hover,.info:focus,.info.open{border-color:var(--brand);color:var(--brand-str)}
+.info.open{background:var(--brand-soft)}
 /* display:none while closed keeps this absolutely-positioned panel out of the
    document's scrollable overflow, which otherwise widens the page on mobile */
 .info-pop{display:none;position:absolute;top:calc(100% + 9px);left:-10px;width:min(360px,calc(100vw - 36px));
   background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow-lift);padding:13px 14px;
   pointer-events:none;z-index:80;text-align:left;font-family:var(--f);font-weight:400;color:var(--ink)}
-.info:hover .info-pop,.info:focus .info-pop{display:block;pointer-events:auto}
+.info:hover .info-pop,.info:focus .info-pop,.info.open .info-pop{display:block;pointer-events:auto}
 .info-pop .hd{font-size:12px;font-weight:700;margin-bottom:7px}
 .info-pop .tx{font-size:11.5px;color:var(--ink-2);line-height:1.55}
 .info-pop .row{display:flex;gap:9px;align-items:flex-start;margin-top:7px}
@@ -309,6 +312,41 @@ body.booting .fbtn,body.booting .reset{opacity:.45;pointer-events:none}
 .stepper button{border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:6px;line-height:1;
   padding:2px 4px;cursor:pointer;border-radius:3px}
 .stepper button:hover{border-color:var(--brand);color:var(--brand-str)}
+
+/* ---------------- the ranking explainer ----------------
+   The tier rules used to live behind a hover-only info icon, which is the wrong
+   place for the single thing the rest of the page is keyed on. They are a card
+   now: the five tests along the top with live counts, the five tiers beneath
+   them, each stating the rule in the same words the scoring uses. */
+.tests{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.test{border:1px solid var(--line);border-radius:12px;padding:13px 14px 14px;background:var(--card-2)}
+.test .tl{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.3}
+.test .tv{font-family:var(--fm);font-size:21px;font-weight:600;letter-spacing:-.7px;margin:9px 0 7px;color:var(--ink)}
+.test .tv i{font-style:normal;font-size:11.5px;font-weight:500;color:var(--muted);margin-left:4px;letter-spacing:0}
+.test .tbar{height:6px;border-radius:4px;background:var(--track);overflow:hidden;margin-bottom:10px}
+.test .tbar i{display:block;height:100%;border-radius:4px;background:var(--brand);
+  transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.test .td{font-size:11px;color:var(--muted);line-height:1.55;font-weight:500}
+
+.subhead{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
+  margin:0 0 12px;display:flex;align-items:baseline;gap:9px}
+.subhead span{font-weight:500;letter-spacing:.2px;text-transform:none;font-size:11px;color:var(--muted)}
+.subhead.mt{margin-top:22px}
+
+.ladder{display:flex;flex-direction:column;gap:9px}
+.rung{display:flex;align-items:flex-start;gap:14px;padding:13px 15px;border:1px solid var(--line);
+  border-radius:12px;background:var(--card-2)}
+/* the tier's own colour on the edge, so the ladder reads as the same ordinal
+   scale the donut and the table pills use */
+.rung{border-left-width:4px;border-left-style:solid}
+.rung .rp{flex:none;width:68px;padding-top:1px}
+.rung .rt{min-width:0;flex:1}
+.rung .rh{font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.1px}
+.rung .rr{font-size:11.5px;color:var(--ink-2);line-height:1.6;margin-top:4px}
+.rung .rr b{color:var(--ink);font-weight:700}
+.rung .rn{margin-left:auto;text-align:right;flex:none;white-space:nowrap;padding-top:1px}
+.rung .rn .v{font-family:var(--fm);font-size:17px;font-weight:600;letter-spacing:-.5px;color:var(--ink);line-height:1.1}
+.rung .rn .q{font-family:var(--fm);font-size:10.5px;color:var(--muted);margin-top:3px}
 
 /* coverage rings */
 .cov-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
@@ -370,12 +408,19 @@ footer a{color:var(--ink-2)}
   .kpis{grid-template-columns:repeat(3,1fr)}
   .card.c4,.card.c5,.card.c6,.card.c7,.card.c8{grid-column:span 12}
   .cov-grid{grid-template-columns:repeat(2,1fr)}
+  .tests{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:700px){
   .kpis{grid-template-columns:repeat(2,1fr)}
   .top-inner{padding:14px 16px}.filters-inner,main,footer{padding-left:16px;padding-right:16px}
   .pstats{margin-left:0;width:100%}.pstat{flex:1;text-align:center}
   .cov-grid{grid-template-columns:1fr}
+  .tests{grid-template-columns:1fr}
+  /* the subhead's gloss sits beside its label on a wide card and under it here */
+  .subhead{flex-direction:column;gap:3px}
+  .rung{flex-wrap:wrap}
+  .rung .rn{margin-left:0;text-align:left;width:100%;display:flex;gap:8px;align-items:baseline}
+  .rung .rn .q{margin-top:0}
   .cond .c-field{min-width:140px}
   /* narrow screens: show the explainer as a bottom sheet so it always fits */
   .info-pop{position:fixed;left:12px;right:12px;top:auto;bottom:12px;width:auto}
@@ -591,6 +636,53 @@ function L_itBand(n){
   return '1,000+';
 }
 
+/* ---------------- the five tests, and the tiers they combine into ----------
+   Defined once, against a derived row, and used by both the transform below and
+   the card that explains them on the page — so the dashboard can never describe
+   a rule the scoring does not actually apply. Each carries the wording the card
+   renders, which is why the prose lives here rather than in the card.        */
+const L_TESTS = [
+  { key:'dev', label:'Device intent',
+    desc:'A third-party intent topic names a laptop, workstation, Windows release, AI PC or desktop service.',
+    of:x => !!x.dev },
+  { key:'fleet', label:'Fleet demand',
+    desc:'Hiring in Singapore, a workforce or office change, or an IT team of 50 or more to run a rollout.',
+    of:x => !!(x.sh >= 1 || x.s[L_SIX['Workforce expansion']] || x.s[L_SIX['Singapore hiring trend']]
+               || x.s[L_SIX['Singapore office status']] || x.s[L_SIX['Singapore office activity']]
+               || (x.ithc != null && x.ithc >= 50)) },
+  { key:'ai', label:'AI programme',
+    desc:'Any AI or Copilot activity live in Singapore — the AI PC and Copilot-device conversation.',
+    of:x => L_FAM_IX[0][1].some(i => x.s[i]) },
+  { key:'modern', label:'Modernisation',
+    desc:'Automation, transformation, cloud, network, security or resilience work under way.',
+    of:x => L_FAM_IX[2][1].some(i => x.s[i]) },
+  { key:'rollout', label:'Rollout announced',
+    desc:'A workplace-technology programme, or technology already deployed in Singapore.',
+    of:x => !!(x.s[L_SIX['Workplace technology programme']] || x.s[L_SIX['Singapore tech deployments']]) },
+];
+/* the wording each tier is explained with, kept beside the rule it describes */
+const L_TIERS = [
+  { tier:'P0', head:'Buying window open',
+    rule:'<b>Device intent</b> and <b>Fleet demand</b> and <b>AI programme</b> and <b>Modernisation</b> — all four at once. They are pricing devices, they have a fleet and a reason to move it, and there are two live programmes to fund it.' },
+  { tier:'P1', head:'Live opportunity',
+    rule:'<b>Device intent</b> and <b>Fleet demand</b> plus at least one of <b>AI programme</b>, <b>Modernisation</b> or <b>Rollout announced</b> — or <b>Fleet demand</b> with all three programmes running together.' },
+  { tier:'P2', head:'Building a case',
+    rule:'<b>Device intent</b> alongside any one other test — or <b>Fleet demand</b> or <b>Rollout announced</b> alongside <b>AI programme</b> or <b>Modernisation</b>.' },
+  { tier:'P3', head:'On the radar',
+    rule:'At least one enrichment signal of any kind, or <b>Device intent</b> on its own. Something is happening, but nothing yet points at a purchase.' },
+  { tier:'Unranked', head:'No signal yet',
+    rule:'None of the 25 enrichment signals came back, and no intent topic names a device.' },
+];
+/* x needs s, t/dev, sh and ithc set; nothing else is read */
+function L_tier(x){
+  const [A, B, C, D, E] = L_TESTS.map(t => t.of(x));
+  if(A && B && C && D) return 'P0';
+  if((A && B && (C || D || E)) || (B && C && D && E)) return 'P1';
+  if((A && (B || C || D || E)) || (B && (C || D)) || (E && (C || D))) return 'P2';
+  if(x.s.reduce((p,v)=>p+v, 0) >= 1 || A) return 'P3';
+  return 'Unranked';
+}
+
 /* The (nM) columns hold an absolute change; express it against the base it grew
    from. floor(x + .5) because JavaScript rounds halves toward +infinity and
    Python rounds them to even — the port has to agree on the boundary. */
@@ -635,7 +727,6 @@ function buildData(accCsv){
     const dom = L_clean(r[a['Domain']]).toLowerCase();
 
     const s = sigIx.map(i => L_normTxt(r[i]) ? 1 : 0);
-    const nsig = s.reduce((x,y)=>x+y, 0);
 
     const ints = Math.trunc(L_num(r[a['Intent Score']]) || 0);
     const tps = L_clean(r[a['Intent Topics']]).split(',').map(t=>t.trim()).filter(Boolean);
@@ -656,29 +747,9 @@ function buildData(accCsv){
     const dev = tps.some(t => L_DEVICE_TOPICS.has(t)) ? 1 : 0;
     const eol = tps.some(t => L_EOL_TOPICS.has(t)) ? 1 : 0;
 
-    // ---- the five tests the priority tiers are built from --------------------
-    // A  a device-level purchase is already being researched
-    const A_ = !!dev;
-    // B  there is a fleet to serve and something is moving it: local hiring, a
-    //    workforce or office change, or an IT org big enough to run a rollout
-    const B_ = !!(sh >= 1 || s[L_SIX['Workforce expansion']] || s[L_SIX['Singapore hiring trend']]
-                  || s[L_SIX['Singapore office status']] || s[L_SIX['Singapore office activity']]
-                  || (ithc != null && ithc >= 50));
-    // C  an AI programme is live — the AI PC and Copilot-device conversation
-    const C_ = L_FAM_IX[0][1].some(i => s[i]);
-    // D  an IT modernisation programme is live — services and the LGA cross-sell
-    const D_ = L_FAM_IX[2][1].some(i => s[i]);
-    // E  a workplace or deployment programme has been announced
-    const E_ = !!(s[L_SIX['Workplace technology programme']] || s[L_SIX['Singapore tech deployments']]);
 
-    let pri;
-    if(A_ && B_ && C_ && D_) pri = 'P0';
-    else if((A_ && B_ && (C_ || D_ || E_)) || (B_ && C_ && D_ && E_)) pri = 'P1';
-    else if((A_ && (B_ || C_ || D_ || E_)) || (B_ && (C_ || D_)) || (E_ && (C_ || D_))) pri = 'P2';
-    else if(nsig >= 1 || A_) pri = 'P3';
-    else pri = 'Unranked';
 
-    out.push({
+    const rec = {
       n:name, d:dom, ind:L_title(r[a['Industry']]), hq:L_title(r[a['Company HQ']]),
       bnd:L_hcBand(hc), itb:L_itBand(ithc),
       hc: hc==null?null:Math.trunc(hc), ithc: ithc==null?null:Math.trunc(ithc),
@@ -686,11 +757,12 @@ function buildData(accCsv){
       g3, g6, g12, itg3, itg6, itg12,
       'is': ints, nt: tps.length, dev, eol, sh, gh,
       li: L_clean(r[a['Linkedin URL']]) ? 1 : 0,
-      pri,
       dn: nameFreq.get(name.toLowerCase()) > 1 ? 1 : 0,
       dd: (dom && domFreq.get(dom) > 1) ? 1 : 0,
       s, t: tps,
-    });
+    };
+    rec.pri = L_tier(rec);
+    out.push(rec);
   }
 
   /* the same company listed twice under two legal names: same domain, same
@@ -1200,22 +1272,6 @@ function bindIntentInput(){
 /* ============================================================
    CARD DEFINITIONS
    ============================================================ */
-const PRI_INFO = `<span class="info" tabindex="0">i<span class="info-pop">
-  <span class="hd">How Sprouts ranks these accounts</span>
-  <div class="tx" style="margin-bottom:4px">Each account is scored on four independent tests, then tiered on how many hold together:</div>
-  <div class="tx" style="margin-bottom:6px">
-    <b>Device intent</b> &mdash; researching a laptop, workstation, Windows release, AI PC or DaaS.<br>
-    <b>Fleet demand</b> &mdash; hiring in Singapore, a workforce or office change, or an IT team of 50+ to run a rollout.<br>
-    <b>AI programme</b> &mdash; live AI or Copilot activity in Singapore.<br>
-    <b>Modernisation</b> &mdash; automation, transformation, cloud, network, security or resilience work.
-  </div>
-  <div class="row"><span class="p pP0">P0</span><span class="tx"><b>Buying window open</b> &mdash; all four hold: they are pricing devices, they have a fleet and a reason to move it, and there is a programme paying for it.</span></div>
-  <div class="row"><span class="p pP1">P1</span><span class="tx"><b>Live opportunity</b> &mdash; device intent and fleet demand alongside a programme, or a full programme with a workplace rollout already announced.</span></div>
-  <div class="row"><span class="p pP2">P2</span><span class="tx"><b>Building a case</b> &mdash; device intent, or a programme paired with fleet demand or a workplace rollout.</span></div>
-  <div class="row"><span class="p pP3">P3</span><span class="tx"><b>On the radar</b> &mdash; at least one signal, but nothing yet that points at a purchase.</span></div>
-  <div class="row"><span class="p pU">None</span><span class="tx"><b>Unranked</b> &mdash; no signal detected yet.</span></div>
-</span></span>`;
-
 const EOL_INFO = `<span class="info" tabindex="0">i<span class="info-pop">
   <span class="hd">Why device-level intent is scored separately</span>
   <div class="tx">Most enrichment signals say a company is <i>busy</i>. Third-party intent on a device topic &mdash; <b>Laptop</b>, <b>Workstations</b>, <b>Windows&nbsp;10</b>, <b>Windows&nbsp;11</b>, <b>AI&nbsp;PC</b>, <b>DaaS</b> or a named ThinkPad, EliteBook or MacBook SKU &mdash; says somebody is costing out a fleet right now. It is the only signal in this sheet that names Capio's own line card, so it carries the most weight in the tiering.
@@ -1245,6 +1301,48 @@ const CARDS = [
           + `twice until the source list is deduplicated — which is why the masthead reports accounts and companies as `
           + `two different numbers.`);
       }
+    }},
+  { cls:'c12', title:'How Accounts Are Ranked', desc:'The five tests behind every tier, and the rule each tier applies · counts follow the filters',
+    render(box){
+      const a = rows(), n = a.length;
+      if(!n) return emptyBox(box);
+
+      const h1 = document.createElement('div'); h1.className = 'subhead';
+      h1.innerHTML = 'The five tests <span>each one is checked independently for every account</span>';
+      box.appendChild(h1);
+      const grid = document.createElement('div'); grid.className = 'tests';
+      L_TESTS.forEach(t=>{
+        const v = a.reduce((s,x)=>s+(t.of(x)?1:0),0);
+        const d = document.createElement('div'); d.className = 'test';
+        d.innerHTML = `<div class="tl">${esc(t.label)}</div>`
+          + `<div class="tv">${pct(v,n)}<i>%</i></div>`
+          + `<div class="tbar"><i style="width:${pct(v,n)}%"></i></div>`
+          + `<div class="td">${esc(t.desc)}</div>`;
+        bindTip(d, `<div class="tt-t">${esc(t.label)}</div>`
+          + `<div class="tt-r"><b>${fmt(v)}</b> of <b>${fmt(n)}</b> accounts in view pass this test · <b>${pct(v,n)}%</b></div>`);
+        grid.appendChild(d);
+      });
+      box.appendChild(grid);
+
+      const h2 = document.createElement('div'); h2.className = 'subhead mt';
+      h2.innerHTML = 'The five tiers <span>the first rule an account satisfies is the tier it lands in</span>';
+      box.appendChild(h2);
+      const lad = document.createElement('div'); lad.className = 'ladder';
+      const m = tally(a,'pri');
+      L_TIERS.forEach(t=>{
+        const v = m.get(RX.pri[t.tier]) || 0;
+        const d = document.createElement('div'); d.className = 'rung';
+        d.style.borderLeftColor = PRI_COL(t.tier);
+        d.innerHTML = `<div class="rp"><span class="pill ${t.tier.replace(/\s/g,'')}">${esc(t.tier)}</span></div>`
+          + `<div class="rt"><div class="rh">${esc(t.head)}</div><div class="rr">${t.rule}</div></div>`
+          + `<div class="rn"><div class="v">${fmt(v)}</div><div class="q">${pct(v,n)}%</div></div>`;
+        lad.appendChild(d);
+      });
+      box.appendChild(lad);
+      addNote(box, `Tiers are evaluated top down, so every account lands in exactly one — an account meeting the `
+        + `<b>P0</b> rule is never also counted under <b>P1</b>. The percentages are of the `
+        + `<span class="num">${fmt(n)}</span> accounts currently in view, so narrowing the filters shows how a `
+        + `cohort is built rather than just how big it is.`);
     }},
   { cls:'c7', title:'Buying-Signal Prevalence', desc:'Share of accounts in view showing each signal, grouped by what it points at', tag:true,
     render(box){
@@ -1286,7 +1384,7 @@ const CARDS = [
         + `this window is available for <span class="num">${fmt(hcN)}</span> of them and IT headcount history for `
         + `<span class="num">${fmt(itN)}</span>; accounts without history never clear a growth threshold.`);
     }},
-  { cls:'c5', title:'Account Prioritization', info:PRI_INFO, desc:'Distribution across priority tiers · P0 is hottest', tag:true,
+  { cls:'c5', title:'Account Prioritization', desc:'Distribution across priority tiers · rules are set out in full above · P0 is hottest', tag:true,
     render(box){
       const a = rows(), m = tally(a,'pri');
       const segs = PRI_ORDER.map(p=>({label:p==='Unranked'?'Unranked':'Priority '+p,
@@ -1768,6 +1866,11 @@ $('#themebtn').addEventListener('click', ()=>{
 $$('.fbtn').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); buildPanel(b.dataset.f, b); }));
 document.addEventListener('click', e=>{
   if(!e.target.isConnected) return;          // node was re-rendered away, not an outside click
+  /* cards are rebuilt on every filter change, so the info icons are bound here
+     rather than per-element */
+  const ic = e.target.closest('.info');
+  $$('.info.open').forEach(x=>{ if(x!==ic) x.classList.remove('open'); });
+  if(ic){ e.stopPropagation(); ic.classList.toggle('open'); return; }
   if(e.target.closest('.fgroup')) return;    // inside a panel
   $$('.panel').forEach(p=>p.classList.remove('open'));
 });
@@ -1779,7 +1882,9 @@ $('#reset').addEventListener('click', ()=>{
   renderAll();
 });
 window.addEventListener('mousemove', e=>{ if(tip.style.opacity>0) moveTip(e); });
-window.addEventListener('keydown', e=>{ if(e.key==='Escape') $$('.panel').forEach(p=>p.classList.remove('open')); });
+window.addEventListener('keydown', e=>{ if(e.key!=='Escape') return;
+  $$('.panel').forEach(p=>p.classList.remove('open'));
+  $$('.info.open').forEach(x=>x.classList.remove('open')); });
 
 $('#themebtn').innerHTML = TICON.system;
 
