@@ -211,9 +211,10 @@ Three things worth knowing about the source:
 - **241 rows are 236 companies.** Five domains appear twice, each the same company
   entered under two legal names with identical headcount — `ktcgroup.com.sg`,
   `okp.listedcompany.com`, `peceng.com`, `rotaryeng.com.sg`, `wohhup.com`. The
-  page lists them in **Duplicate Rows to Merge** and reports accounts and companies
-  as two separate figures in the masthead, rather than quietly counting five
-  companies twice. Every other figure on the page counts rows.
+  masthead reports accounts and companies as two separate figures rather than
+  quietly counting five companies twice, and the coverage card says so in words.
+  Every other figure on the page counts rows. `python3 build_data.py` prints the
+  five pairs by name, which is where to go when the source list gets deduplicated.
 
 One row — `CATLIN SINGAPORE PTE. LTD.` — has no domain at all. It still counts as
 its own company, and its name is not linked in the tables because there is nothing

@@ -1240,9 +1240,10 @@ const CARDS = [
       const dupes = DATA.summary.dupes || [];
       if(dupes.length){
         addNote(box, `<span class="num">${fmt(c.rows)}</span> rows resolve to <span class="num">${fmt(c.distinct)}</span> `
-          + `distinct companies. <b>${dupes.length} domains appear twice</b>, each as the same company under two legal `
-          + `names — the pairs are listed at the foot of this page. Every figure here counts <b>rows</b>, so those five `
-          + `companies are counted twice until the source list is deduplicated.`);
+          + `distinct companies: <b>${dupes.length} domains appear twice</b>, each the same company entered under two `
+          + `legal names. Every figure on this page counts <b>rows</b>, so those ${dupes.length} companies are counted `
+          + `twice until the source list is deduplicated — which is why the masthead reports accounts and companies as `
+          + `two different numbers.`);
       }
     }},
   { cls:'c7', title:'Buying-Signal Prevalence', desc:'Share of accounts in view showing each signal, grouped by what it points at', tag:true,
@@ -1488,28 +1489,8 @@ const CARDS = [
           + `<div class="tt-r">${esc(L_FAM_OF[i])} · ${on?'<b>signal present</b>':'not detected'}</div>`);
       });
     }},
-  { cls:'c12', title:'Duplicate Rows to Merge', desc:'The same company entered twice under two legal names · not affected by filters',
-    when: () => (DATA.summary.dupes||[]).length > 0,
-    render(box){
-      const dupes = DATA.summary.dupes || [];
-      const byDom = new Map(); ACC.forEach(x=>{ if(!byDom.has(x.d)) byDom.set(x.d, x); });
-      table(box,
-        [{label:'Domain'},{label:'Entered as'},{label:'Headcount',cls:'num r'},{label:'Industry'}],
-        dupes.map(([dm, names])=>{
-          const x = byDom.get(dm);
-          return [
-            {html:`<a href="https://${esc(dm)}" target="_blank" rel="noopener noreferrer">${esc(dm)}</a>`, cls:'nm'},
-            {html:names.map(esc).join(' <span style="color:var(--muted)">/</span> '), cls:'dim', },
-            {html:x && x.hc!=null ? fmt(x.hc) : '–', cls:'num r'},
-            {html:x ? esc(clip(L.ind[x.ind],30)) : '–', cls:'dim'},
-          ];
-        }),
-        `Both rows carry the same domain and the same headcount, so they are one company counted twice. Until the source `
-        + `sheet is deduplicated, every count on this page is of <b>rows</b> — which is why the masthead reports accounts `
-        + `and companies as two different numbers.`);
-    }},
 ];
-const cards = () => CARDS.filter(c => !c.when || c.when());
+const cards = () => CARDS;
 
 /* ============================================================
    KPIs
