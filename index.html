@@ -229,10 +229,16 @@ body.booting .fbtn,body.booting .reset{opacity:.45;pointer-events:none}
 .kpi:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
 .kpi.hot:before{background:var(--accent)}
 .k-lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);line-height:1.35;min-height:28px}
-.k-val{font-family:var(--fm);font-size:29px;font-weight:600;letter-spacing:-1.2px;line-height:1;margin-top:7px;color:var(--ink)}
+/* headline figure and the count it is drawn from read as one line, split by a
+   rule — the subtitle underneath is then free to say what the number means */
+.k-val{font-family:var(--fm);font-size:28px;font-weight:600;letter-spacing:-1.2px;line-height:1;margin-top:7px;
+  color:var(--ink);display:flex;align-items:baseline;flex-wrap:wrap}
 .k-val .u{font-size:16px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:1px}
-.k-sub{font-size:11px;color:var(--ink-2);margin-top:7px;font-weight:500;line-height:1.4}
-.k-sub .num{font-size:10.5px}
+.k-val .k-cnt{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;white-space:nowrap;
+  margin-left:11px;padding-left:12px;position:relative}
+.k-val .k-cnt:before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:1px;height:14px;background:currentColor;opacity:.4}
+.k-sub{font-size:11px;color:var(--ink-2);margin-top:8px;font-weight:500;line-height:1.45}
 
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:17px 19px 19px;min-width:0}
@@ -412,6 +418,8 @@ footer a{color:var(--ink-2)}
 }
 @media(max-width:700px){
   .kpis{grid-template-columns:repeat(2,1fr)}
+  .k-val .k-cnt{width:100%;margin:6px 0 0;padding-left:0}
+  .k-val .k-cnt:before{display:none}
   .top-inner{padding:14px 16px}.filters-inner,main,footer{padding-left:16px;padding-right:16px}
   .pstats{margin-left:0;width:100%}.pstat{flex:1;text-align:center}
   .cov-grid{grid-template-columns:1fr}
@@ -1598,19 +1606,33 @@ function kpiSpecs(){
   const dev = c(x=>x.dev);
   const ai  = c(x=>FAMS[0][1].some(i=>x.s[i]));
   const fleet = c(x=>x.ithc!=null && x.ithc>=50);
+  /* every tile reads the same way: the share, the count it came from, then a
+     sentence saying what it means. The first has no share to show — it is the
+     denominator — so it states the count and what the count currently is. */
+  const filtered = n !== total();
+  const acc = v => `${fmt(v)} account${v === 1 ? '' : 's'}`;
   return [
-    {l:'Accounts in view', v:fmt(n), sub:`of <span class="num">${fmt(total())}</span> in the portfolio`},
-    {l:'Priority P0 + P1', v:pct(p01,n), u:'%', sub:`<span class="num">${fmt(p01)}</span> accounts worth a call this quarter`},
-    {l:'Pricing hardware now', v:pct(dev,n), u:'%', hot:true, sub:`<span class="num">${fmt(dev)}</span> with device-level intent`},
-    {l:'AI programme live', v:pct(ai,n), u:'%', sub:`<span class="num">${fmt(ai)}</span> accounts &mdash; the AI PC opening`},
-    {l:'IT team of 50+', v:pct(fleet,n), u:'%', sub:`<span class="num">${fmt(fleet)}</span> can run their own rollout`},
+    {l:'Accounts in view', v:fmt(n), cnt: filtered ? `of ${fmt(total())}` : '',
+     sub: filtered ? 'Accounts matching the filters currently applied'
+                   : 'Total accounts in the portfolio'},
+    {l:'Priority P0 + P1', v:pct(p01,n), u:'%', cnt:acc(p01),
+     sub:'High-priority accounts worth contacting this quarter'},
+    {l:'Pricing hardware now', v:pct(dev,n), u:'%', hot:true, cnt:acc(dev),
+     sub:'Accounts showing interest in purchasing hardware'},
+    {l:'AI programme live', v:pct(ai,n), u:'%', cnt:acc(ai),
+     sub:'Accounts with an active AI programme and potential AI PC opportunity'},
+    {l:'IT team of 50+', v:pct(fleet,n), u:'%', cnt:acc(fleet),
+     sub:'Accounts with large enough IT teams to manage their own rollout'},
   ];
 }
 function renderKpis(){
   const box = $('#kpis'); box.innerHTML = '';
   kpiSpecs().forEach(c=>{
     const d = document.createElement('div'); d.className = 'kpi' + (c.hot?' hot':'');
-    d.innerHTML = `<div class="k-lbl">${c.l}</div><div class="k-val">${c.v}<span class="u">${c.u||''}</span></div><div class="k-sub">${c.sub}</div>`;
+    d.innerHTML = `<div class="k-lbl">${c.l}</div>`
+      + `<div class="k-val">${c.v}<span class="u">${c.u||''}</span>`
+      + (c.cnt ? `<span class="k-cnt">${c.cnt}</span>` : '')
+      + `</div><div class="k-sub">${c.sub}</div>`;
     box.appendChild(d);
   });
 }
