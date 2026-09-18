@@ -104,12 +104,17 @@ header.top{background:var(--mast);color:var(--mast-ink);position:sticky;top:0;z-
 .wordmark i{color:var(--accent-lite);font-style:normal}
 .htitle{font-size:15.5px;font-weight:700;letter-spacing:-.1px;line-height:1.2}
 .hsub{font-size:11.5px;color:var(--mast-mut);margin-top:3px;letter-spacing:.2px;font-weight:500}
-/* portfolio counters — this board has one dataset, so the masthead states its
-   size rather than offering a switch between boards that do not exist */
-.pstats{margin-left:auto;display:flex;background:var(--mast-2);border-radius:11px;padding:4px;gap:3px}
-.pstat{padding:8px 18px;border-radius:8px;text-align:right}
-.pstat .v{font-family:var(--fm);font-size:17px;font-weight:600;letter-spacing:-.5px;line-height:1.1;color:var(--mast-ink)}
-.pstat .l{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mast-mut);margin-top:4px}
+/* board switch — the two account sets are different populations scored on
+   different tests, so the tab carries its own size rather than implying the
+   numbers either side of it are comparable */
+.boards{margin-left:auto;display:flex;background:var(--mast-2);border-radius:11px;padding:4px;gap:3px}
+.boards button{border:0;background:transparent;color:var(--mast-mut);font-family:var(--f);cursor:pointer;
+  padding:8px 18px;border-radius:8px;text-align:left;transition:.18s;white-space:nowrap}
+.boards button:hover{color:var(--mast-ink);background:var(--mast-3)}
+.boards button .bl{font-size:12.5px;font-weight:700;line-height:1.1;display:block}
+.boards button .bn{font-family:var(--fm);font-size:10px;font-weight:600;opacity:.7;margin-top:4px;display:block}
+.boards button.active{background:var(--card);color:var(--brand-str)}
+.boards button.active .bn{opacity:.85}
 
 /* ---------------- filter rail ---------------- */
 .filters{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:var(--mastH,78px);z-index:55}
@@ -421,7 +426,7 @@ footer a{color:var(--ink-2)}
   .k-val .k-cnt{width:100%;margin:6px 0 0;padding-left:0}
   .k-val .k-cnt:before{display:none}
   .top-inner{padding:14px 16px}.filters-inner,main,footer{padding-left:16px;padding-right:16px}
-  .pstats{margin-left:0;width:100%}.pstat{flex:1;text-align:center}
+  .boards{margin-left:0;width:100%}.boards button{flex:1;text-align:center}
   .cov-grid{grid-template-columns:1fr}
   .tests{grid-template-columns:1fr}
   /* the subhead's gloss sits beside its label on a wide card and under it here */
@@ -446,10 +451,7 @@ footer a{color:var(--ink-2)}
         <div class="hsub">Singapore enterprise portfolio &middot; signal enrichment by Sprouts</div>
       </div>
     </div>
-    <div class="pstats">
-      <div class="pstat"><div class="v" id="ps-rows">&mdash;</div><div class="l">Accounts</div></div>
-      <div class="pstat"><div class="v" id="ps-sig">&mdash;</div><div class="l">Signal-enriched</div></div>
-    </div>
+    <div class="boards" id="boards" role="tablist" aria-label="Account set"></div>
   </div>
 </header>
 
@@ -481,6 +483,7 @@ footer a{color:var(--ink-2)}
 const SNAPSHOT =
 null;
 const SNAPSHOT_AT = null;
+/* SNAPSHOT, when baked in by build_data.py --embed, is keyed by board. */
 /* ============================================================
    Live data layer.
 
@@ -490,23 +493,216 @@ const SNAPSHOT_AT = null;
    is a direct port of build_data.py — the two must agree.
    ============================================================ */
 /* ---------------- data source ----------------
-   In production the page talks to /api/sheet, a serverless proxy that holds the
-   spreadsheet id in SHEET_ID and caches at the edge — so the id never reaches
-   the browser and N viewers cost one upstream read per minute instead of N.
+   Two workbooks, one per board. In production the page talks to /api/sheet,
+   a serverless proxy that holds both spreadsheet ids and caches at the edge —
+   so neither id reaches the browser and N viewers cost one upstream read per
+   board per minute instead of N.
 
-   Passing ?sheet=<spreadsheetId> bypasses the proxy and reads Google directly,
-   which is how the file works when opened from disk or served statically.     */
-const TAB_GID = { accounts: '0' };
+   Passing ?existing=<id> and/or ?netnew=<id> bypasses the proxy for that board
+   and reads Google directly, which is how the file works when opened from disk
+   or served statically. ?sheet=<id> is kept as an alias for ?existing=.      */
 const Q = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
-const DIRECT_SHEET = Q.get('sheet');
 const REFRESH_MS = (() => {
   const s = parseInt(Q.get('refresh') || '', 10);
   return Number.isFinite(s) ? Math.min(Math.max(s, 15), 3600) * 1000 : 60000;
 })();
-const sourceUrl = tab => DIRECT_SHEET
-  ? `https://docs.google.com/spreadsheets/d/${encodeURIComponent(DIRECT_SHEET)}/export?format=csv&gid=${TAB_GID[tab]}`
-  : `/api/sheet?tab=${tab}`;
-const DIRECT = !!DIRECT_SHEET;
+
+/* ---------------- the signals ----------------
+   26 enrichment columns, shared by both workbooks, grouped into the four
+   families Capio sells to. Order inside a family runs from the most direct read
+   on a purchase to the most circumstantial, so the signal strip in the table
+   reads left to right. A column that is present but never populated in one of
+   the two sheets still appears, at zero — an absent signal is a fact about the
+   portfolio, not a reason to hide the row.                                    */
+const L_FAMILIES = [
+  ['AI & Copilot Readiness', [
+    ['AI presence in Singapore',       'AI Presence In Singapore'],
+    ['AI adoption in Singapore',       'AI Adoption In Singapore'],
+    ['AI hiring in Singapore',         'AI Hiring Activity Singapore'],
+    ['Singapore AI initiatives',       'Singapore AI Initiatives'],
+    ['AI infrastructure investment',   'Singapore AI Infrastructure Investment'],
+    ['Copilot deployment',             'Copilot Deployment Status'],
+  ]],
+  ['Workplace & Office', [
+    ['Singapore office activity',      'Singapore Office Activity'],
+    ['Singapore tech deployments',     'Singapore Tech Deployments'],
+    ['Singapore office status',        'Singapore Office Status'],
+    ['Singapore office expansion',     'Singapore Office Expansion'],
+    ['Workplace technology programme', 'Workplace Technology Initiatives'],
+    ['Office / hybrid policy',         'Singapore Office Policy'],
+  ]],
+  ['IT Modernisation', [
+    ['Automation initiatives',         'Singapore Automation Initiatives'],
+    ['Digital transformation',         'Digital Transformation Activity'],
+    ['Network upgrades',               'Singapore Network Upgrades'],
+    ['IT resilience programme',        'IT Resilience Initiatives'],
+    ['IT modernisation plans',         'IT Modernisation Plans'],
+    ['Cloud adoption',                 'Singapore Cloud Adoption'],
+    ['Singapore IT investment',        'Singapore IT Investments'],
+    ['Security initiatives',           'Singapore Security Initiatives'],
+  ]],
+  ['Growth & Funding', [
+    ['Singapore regional presence',    'Singapore Regional Presence'],
+    ['Singapore market activity',      'Singapore Market Activity'],
+    ['Singapore hiring trend',         'Singapore Hiring Trend'],
+    ['Funding impact',                 'Singapore Funding Impact'],
+    ['Government grant support',       'Singapore Grant Support'],
+    ['Workforce expansion',            'Singapore Workforce Expansion'],
+  ]],
+];
+const L_SIGNALS = L_FAMILIES.flatMap(([, pairs]) => pairs);
+const L_SIG_LABELS = L_SIGNALS.map(s => s[0]);
+const L_SIX = {}; L_SIG_LABELS.forEach((l,i) => L_SIX[l] = i);
+/* family name -> the signal indices it owns, so a board can group without
+   re-stating the taxonomy */
+const L_FAM_IX = (() => { let k = 0;
+  return L_FAMILIES.map(([fam, pairs]) => [fam, pairs.map(() => k++)]); })();
+const L_FAM_OF = {}; L_FAM_IX.forEach(([fam, ixs]) => ixs.forEach(i => L_FAM_OF[i] = fam));
+const FAM_AI = L_FAM_IX[0][1], FAM_WORK = L_FAM_IX[1][1], FAM_MOD = L_FAM_IX[2][1];
+
+/* Third-party intent topics that name a device, an operating system or a desktop
+   delivery model. These are the topics Capio can quote against directly, and are
+   what separates "researching something" from "researching a fleet". */
+const L_DEVICE_TOPICS = new Set([
+  'Laptop','Workstations','Windows 10','Windows 11',
+  'AI PC (Artificial Intelligence Personal Computer)',
+  'Lenovo ThinkPad','Lenovo ThinkCentre','Lenovo ThinkBook','Lenovo ThinkStation',
+  'HP EliteBook','Apple MacBook Air','Apple MacBook Pro',
+  'Desktop as a Service (DaaS)',
+]);
+/* Windows 10 went out of support in October 2025. An account researching it — or
+   researching what replaces it — has a dated, externally-imposed reason to buy. */
+const L_EOL_TOPICS = new Set(['Windows 10','Windows 11','AI PC (Artificial Intelligence Personal Computer)']);
+
+/* ---------------- the two boards ----------------
+   The workbooks share 43 of their columns but not their populations, and that is
+   the whole reason each board carries its own tests and bands rather than
+   inheriting one model.
+
+   The existing portfolio is enterprise: 237 accounts, median 519 staff, third-
+   party intent on roughly half of them. The net-new list is Singapore SMB: 499
+   accounts, median 51 staff, and intent on exactly one of them. Scoring net-new
+   on "is this account already pricing devices" would put one account in P0 and
+   call the ranking done, so it is scored on what that data actually carries.  */
+const BOARDS = [
+  {
+    key: 'existing', label: 'Existing', noun: 'existing accounts',
+    sheet: '1MJHjM6ubBba_ZHXBk8jsYqLdcixdOBrgxvH8AdZWZYI', gid: '0',
+    blurb: 'Singapore enterprise portfolio',
+    /* the name column has been renamed once already; resolve by name and fall
+       back to the first column rather than breaking on the next rename */
+    nameCols: ['Company Name', 'Existing Accounts - If any — accounts to reuse or prioritise.'],
+    liCols:   ['Linkedin URL', 'Company Linkedin URL'],
+    hasIntent: true, hasITHC: true,
+    hcBands: ['< 200','200 – 999','1,000 – 4,999','5,000 – 19,999','20,000+'],
+    hcBand: n => n == null ? 'Unknown' : n < 200 ? '< 200' : n < 1000 ? '200 – 999'
+             : n < 5000 ? '1,000 – 4,999' : n < 20000 ? '5,000 – 19,999' : '20,000+',
+    itBands: ['< 10','10 – 49','50 – 199','200 – 999','1,000+'],
+    itBand: n => n == null ? 'Unknown' : n < 10 ? '< 10' : n < 50 ? '10 – 49'
+             : n < 200 ? '50 – 199' : n < 1000 ? '200 – 999' : '1,000+',
+    revBands: [['< $10M',0,1e7],['$10 – 100M',1e7,1e8],['$100M – 1B',1e8,1e9],
+               ['$1 – 10B',1e9,1e10],['$10B+',1e10,Infinity]],
+    tests: [
+      { key:'dev', label:'Device intent',
+        desc:'A third-party intent topic names a laptop, workstation, Windows release, AI PC or desktop service.',
+        of:x => !!x.dev },
+      { key:'fleet', label:'Fleet demand',
+        desc:'Hiring in Singapore, a workforce or office change, or an IT team of 50 or more to run a rollout.',
+        of:x => !!(x.sh >= 1 || x.s[L_SIX['Workforce expansion']] || x.s[L_SIX['Singapore hiring trend']]
+                   || x.s[L_SIX['Singapore office status']] || x.s[L_SIX['Singapore office activity']]
+                   || (x.ithc != null && x.ithc >= 50)) },
+      { key:'ai', label:'AI programme',
+        desc:'Any AI or Copilot activity live in Singapore — the AI PC and Copilot-device conversation.',
+        of:x => FAM_AI.some(i => x.s[i]) },
+      { key:'modern', label:'Modernisation',
+        desc:'Automation, transformation, cloud, network, security or resilience work under way.',
+        of:x => FAM_MOD.some(i => x.s[i]) },
+      { key:'rollout', label:'Rollout announced',
+        desc:'A workplace-technology programme, or technology already deployed in Singapore.',
+        of:x => !!(x.s[L_SIX['Workplace technology programme']] || x.s[L_SIX['Singapore tech deployments']]) },
+    ],
+    tiers: [
+      { tier:'P0', head:'Buying window open',
+        rule:'<b>Device intent</b> and <b>Fleet demand</b> and <b>AI programme</b> and <b>Modernisation</b> — all four at once. They are pricing devices, they have a fleet and a reason to move it, and there are two live programmes to fund it.' },
+      { tier:'P1', head:'Live opportunity',
+        rule:'<b>Device intent</b> and <b>Fleet demand</b> plus at least one of <b>AI programme</b>, <b>Modernisation</b> or <b>Rollout announced</b> — or <b>Fleet demand</b> with all three programmes running together.' },
+      { tier:'P2', head:'Building a case',
+        rule:'<b>Device intent</b> alongside any one other test — or <b>Fleet demand</b> or <b>Rollout announced</b> alongside <b>AI programme</b> or <b>Modernisation</b>.' },
+      { tier:'P3', head:'On the radar',
+        rule:'At least one enrichment signal of any kind, or <b>Device intent</b> on its own. Something is happening, but nothing yet points at a purchase.' },
+      { tier:'Unranked', head:'No signal yet',
+        rule:'None of the 26 enrichment signals came back, and no intent topic names a device.' },
+    ],
+  },
+  {
+    key: 'netnew', label: 'Net new', noun: 'net-new accounts',
+    sheet: '1NNFcCsa29lr4gavs7PFyXxm88PLIMpnNTmaIbyKax18', gid: '0',
+    blurb: 'Singapore net-new prospects',
+    nameCols: ['Company Name'],
+    liCols:   ['Company Linkedin URL', 'Linkedin URL'],
+    /* intent is on 1 of 499 rows and IT headcount on 45, so the cards and tests
+       that lean on them are switched off for this board rather than drawn empty */
+    hasIntent: false, hasITHC: false,
+    hcBands: ['< 10','10 – 49','50 – 99','100 – 249','250+'],
+    hcBand: n => n == null ? 'Unknown' : n < 10 ? '< 10' : n < 50 ? '10 – 49'
+             : n < 100 ? '50 – 99' : n < 250 ? '100 – 249' : '250+',
+    itBands: ['< 10','10 – 49','50 – 199','200+'],
+    itBand: n => n == null ? 'Unknown' : n < 10 ? '< 10' : n < 50 ? '10 – 49'
+             : n < 200 ? '50 – 199' : '200+',
+    revBands: [['< $1M',0,1e6],['$1 – 10M',1e6,1e7],['$10 – 50M',1e7,5e7],
+               ['$50 – 250M',5e7,2.5e8],['$250M+',2.5e8,Infinity]],
+    tests: [
+      { key:'moment', label:'Workplace moment',
+        desc:'A new or expanded Singapore office, a hybrid-work policy, or technology recently deployed.',
+        of:x => FAM_WORK.some(i => x.s[i]) },
+      { key:'growing', label:'Growing',
+        desc:'A Singapore hiring trend, an open role anywhere, or headcount up 5% or more over twelve months.',
+        of:x => !!(x.s[L_SIX['Singapore hiring trend']] || x.sh >= 1 || x.gh >= 1
+                   || (x.g12 != null && x.g12 >= 5)) },
+      { key:'ai', label:'AI programme',
+        desc:'Any AI or Copilot activity live in Singapore — the AI PC and Copilot-device conversation.',
+        of:x => FAM_AI.some(i => x.s[i]) },
+      { key:'modern', label:'Modernisation',
+        desc:'Automation, transformation, cloud, network, security or resilience work under way.',
+        of:x => FAM_MOD.some(i => x.s[i]) },
+      { key:'scale', label:'Fleet worth serving',
+        desc:'Fifty staff or more — the point at which a device fleet is worth a managed conversation.',
+        of:x => !!(x.hc != null && x.hc >= 50) },
+    ],
+    tiers: [
+      { tier:'P0', head:'Best first calls',
+        rule:'<b>Workplace moment</b> and <b>Growing</b> and <b>AI programme</b> and <b>Modernisation</b> — all four at once. Something is changing about how they work, they are adding people, and they are already spending on technology.' },
+      { tier:'P1', head:'Strong prospect',
+        rule:'<b>Workplace moment</b> and <b>Growing</b> plus at least one of <b>AI programme</b>, <b>Modernisation</b> or <b>Fleet worth serving</b> — or <b>Growing</b> with both programmes and the scale to matter.' },
+      { tier:'P2', head:'Worth qualifying',
+        rule:'<b>Workplace moment</b> alongside any one other test — or <b>Growing</b> or <b>Fleet worth serving</b> alongside <b>AI programme</b> or <b>Modernisation</b>.' },
+      { tier:'P3', head:'On the radar',
+        rule:'At least one enrichment signal of any kind, or a <b>Workplace moment</b> on its own. A real Singapore business, but nothing yet that gives a reason to call.' },
+      { tier:'Unranked', head:'No signal yet',
+        rule:'None of the 26 enrichment signals came back for this account.' },
+    ],
+  },
+];
+const BOARD_OF = {}; BOARDS.forEach(b => BOARD_OF[b.key] = b);
+
+/* Both boards tier on the same shape — five tests, five rules, first match wins —
+   so the ladder is one function over whichever five tests the board defines. */
+function tierWith(board, x){
+  const [A, B, C, D, E] = board.tests.map(t => t.of(x));
+  if(A && B && C && D) return 'P0';
+  if((A && B && (C || D || E)) || (B && C && D && E)) return 'P1';
+  if((A && (B || C || D || E)) || (B && (C || D)) || (E && (C || D))) return 'P2';
+  if(x.s.reduce((p,v)=>p+v, 0) >= 1 || A) return 'P3';
+  return 'Unranked';
+}
+
+const directId = b => Q.get(b.key) || (b.key === 'existing' ? Q.get('sheet') : null);
+const sourceUrl = b => {
+  const id = directId(b);
+  return id
+    ? `https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/export?format=csv&gid=${b.gid}`
+    : `/api/sheet?tab=${b.key}`;
+};
 
 /* ---------------- CSV ---------------- */
 /* RFC4180: quoted fields may contain commas, newlines and doubled quotes. The
@@ -539,9 +735,9 @@ function parseCSV(text){
 /* ---------------- field helpers (ported 1:1) ---------------- */
 const RX_PLACE = /^(unknown|#ref!?|#n\/?a|n\/?a|na|null|none|nil|tbd|-+|\.+)$/i;
 /* A narrative that opens by denying the thing it was asked about is an absence
-   of signal, not a signal. Today's export carries only positive narratives, but
-   the sheet is re-enriched continuously and this keeps a future "No, there is no
-   evidence of..." from being scored as evidence. */
+   of signal, not a signal. Today's exports carry only positive narratives, but
+   the sheets are re-enriched continuously and this keeps a future "No, there is
+   no evidence of..." from being scored as evidence. */
 const RX_NEG = /^\s*[-*\s]*\**\s*(no\b|none\b|not\b|there (are|is) no|no (clear|public|direct|confirmed|specific|evidence|signal|indication))/i;
 
 const L_clean = v => { const t = (v==null?'':String(v)).trim(); return RX_PLACE.test(t) ? '' : t; };
@@ -558,138 +754,6 @@ function L_num(v){
 }
 const L_title = s => { const t = L_clean(s); return t || 'Unknown'; };
 
-/* ---------------- the signals ----------------
-   25 enrichment columns, grouped into the four families Capio sells to. Order
-   inside a family runs from the most direct read on a purchase to the most
-   circumstantial, so the signal strip in the table reads left to right. */
-const L_FAMILIES = [
-  ['AI & Copilot Readiness', [
-    ['AI presence in Singapore',       'AI Presence In Singapore'],
-    ['AI adoption in Singapore',       'AI Adoption In Singapore'],
-    ['AI hiring in Singapore',         'AI Hiring Activity Singapore'],
-    ['Singapore AI initiatives',       'Singapore AI Initiatives'],
-    ['AI infrastructure investment',   'Singapore AI Infrastructure Investment'],
-    ['Copilot deployment',             'Copilot Deployment Status'],
-  ]],
-  ['Workplace & Office', [
-    ['Singapore office activity',      'Singapore Office Activity'],
-    ['Singapore tech deployments',     'Singapore Tech Deployments'],
-    ['Singapore office status',        'Singapore Office Status'],
-    ['Workplace technology programme', 'Workplace Technology Initiatives'],
-    ['Office / hybrid policy',         'Singapore Office Policy'],
-  ]],
-  ['IT Modernisation', [
-    ['Automation initiatives',         'Singapore Automation Initiatives'],
-    ['Digital transformation',         'Digital Transformation Activity'],
-    ['Network upgrades',               'Singapore Network Upgrades'],
-    ['IT resilience programme',        'IT Resilience Initiatives'],
-    ['IT modernisation plans',         'IT Modernisation Plans'],
-    ['Cloud adoption',                 'Singapore Cloud Adoption'],
-    ['Singapore IT investment',        'Singapore IT Investments'],
-    ['Security initiatives',           'Singapore Security Initiatives'],
-  ]],
-  ['Growth & Funding', [
-    ['Singapore regional presence',    'Singapore Regional Presence'],
-    ['Singapore market activity',      'Singapore Market Activity'],
-    ['Singapore hiring trend',         'Singapore Hiring Trend'],
-    ['Funding impact',                 'Singapore Funding Impact'],
-    ['Government grant support',       'Singapore Grant Support'],
-    ['Workforce expansion',            'Singapore Workforce Expansion'],
-  ]],
-];
-const L_SIGNALS = L_FAMILIES.flatMap(([, pairs]) => pairs);
-const L_SIG_LABELS = L_SIGNALS.map(s => s[0]);
-const L_SIX = {}; L_SIG_LABELS.forEach((l,i) => L_SIX[l] = i);
-/* family name -> the signal indices it owns, so the board can group without
-   re-stating the taxonomy */
-const L_FAM_IX = (() => { let k = 0;
-  return L_FAMILIES.map(([fam, pairs]) => [fam, pairs.map(() => k++)]); })();
-const L_FAM_OF = {}; L_FAM_IX.forEach(([fam, ixs]) => ixs.forEach(i => L_FAM_OF[i] = fam));
-
-/* Third-party intent topics that name a device, an operating system or a desktop
-   delivery model. These are the topics Capio can quote against directly, and are
-   what separates "researching something" from "researching a fleet". */
-const L_DEVICE_TOPICS = new Set([
-  'Laptop','Workstations','Windows 10','Windows 11',
-  'AI PC (Artificial Intelligence Personal Computer)',
-  'Lenovo ThinkPad','Lenovo ThinkCentre','Lenovo ThinkBook','Lenovo ThinkStation',
-  'HP EliteBook','Apple MacBook Air','Apple MacBook Pro',
-  'Desktop as a Service (DaaS)',
-]);
-/* Windows 10 went out of support in October 2025. An account researching it — or
-   researching what replaces it — has a dated, externally-imposed reason to buy. */
-const L_EOL_TOPICS = new Set(['Windows 10','Windows 11','AI PC (Artificial Intelligence Personal Computer)']);
-
-/* ---------------- banding ----------------
-   The portfolio runs from 2 staff to 150,832, so the bands are logarithmic
-   rather than even. Company headcount sizes the fleet; IT headcount sizes both
-   the buying committee and the team that would run a deployment. */
-const HC_BANDS = ['< 200','200 – 999','1,000 – 4,999','5,000 – 19,999','20,000+'];
-function L_hcBand(n){
-  if(n == null) return 'Unknown';
-  if(n < 200)   return '< 200';
-  if(n < 1000)  return '200 – 999';
-  if(n < 5000)  return '1,000 – 4,999';
-  if(n < 20000) return '5,000 – 19,999';
-  return '20,000+';
-}
-const IT_BANDS = ['< 10','10 – 49','50 – 199','200 – 999','1,000+'];
-function L_itBand(n){
-  if(n == null) return 'Unknown';
-  if(n < 10)   return '< 10';
-  if(n < 50)   return '10 – 49';
-  if(n < 200)  return '50 – 199';
-  if(n < 1000) return '200 – 999';
-  return '1,000+';
-}
-
-/* ---------------- the five tests, and the tiers they combine into ----------
-   Defined once, against a derived row, and used by both the transform below and
-   the card that explains them on the page — so the dashboard can never describe
-   a rule the scoring does not actually apply. Each carries the wording the card
-   renders, which is why the prose lives here rather than in the card.        */
-const L_TESTS = [
-  { key:'dev', label:'Device intent',
-    desc:'A third-party intent topic names a laptop, workstation, Windows release, AI PC or desktop service.',
-    of:x => !!x.dev },
-  { key:'fleet', label:'Fleet demand',
-    desc:'Hiring in Singapore, a workforce or office change, or an IT team of 50 or more to run a rollout.',
-    of:x => !!(x.sh >= 1 || x.s[L_SIX['Workforce expansion']] || x.s[L_SIX['Singapore hiring trend']]
-               || x.s[L_SIX['Singapore office status']] || x.s[L_SIX['Singapore office activity']]
-               || (x.ithc != null && x.ithc >= 50)) },
-  { key:'ai', label:'AI programme',
-    desc:'Any AI or Copilot activity live in Singapore — the AI PC and Copilot-device conversation.',
-    of:x => L_FAM_IX[0][1].some(i => x.s[i]) },
-  { key:'modern', label:'Modernisation',
-    desc:'Automation, transformation, cloud, network, security or resilience work under way.',
-    of:x => L_FAM_IX[2][1].some(i => x.s[i]) },
-  { key:'rollout', label:'Rollout announced',
-    desc:'A workplace-technology programme, or technology already deployed in Singapore.',
-    of:x => !!(x.s[L_SIX['Workplace technology programme']] || x.s[L_SIX['Singapore tech deployments']]) },
-];
-/* the wording each tier is explained with, kept beside the rule it describes */
-const L_TIERS = [
-  { tier:'P0', head:'Buying window open',
-    rule:'<b>Device intent</b> and <b>Fleet demand</b> and <b>AI programme</b> and <b>Modernisation</b> — all four at once. They are pricing devices, they have a fleet and a reason to move it, and there are two live programmes to fund it.' },
-  { tier:'P1', head:'Live opportunity',
-    rule:'<b>Device intent</b> and <b>Fleet demand</b> plus at least one of <b>AI programme</b>, <b>Modernisation</b> or <b>Rollout announced</b> — or <b>Fleet demand</b> with all three programmes running together.' },
-  { tier:'P2', head:'Building a case',
-    rule:'<b>Device intent</b> alongside any one other test — or <b>Fleet demand</b> or <b>Rollout announced</b> alongside <b>AI programme</b> or <b>Modernisation</b>.' },
-  { tier:'P3', head:'On the radar',
-    rule:'At least one enrichment signal of any kind, or <b>Device intent</b> on its own. Something is happening, but nothing yet points at a purchase.' },
-  { tier:'Unranked', head:'No signal yet',
-    rule:'None of the 25 enrichment signals came back, and no intent topic names a device.' },
-];
-/* x needs s, t/dev, sh and ithc set; nothing else is read */
-function L_tier(x){
-  const [A, B, C, D, E] = L_TESTS.map(t => t.of(x));
-  if(A && B && C && D) return 'P0';
-  if((A && B && (C || D || E)) || (B && C && D && E)) return 'P1';
-  if((A && (B || C || D || E)) || (B && (C || D)) || (E && (C || D))) return 'P2';
-  if(x.s.reduce((p,v)=>p+v, 0) >= 1 || A) return 'P3';
-  return 'Unranked';
-}
-
 /* The (nM) columns hold an absolute change; express it against the base it grew
    from. floor(x + .5) because JavaScript rounds halves toward +infinity and
    Python rounds them to even — the port has to agree on the boundary. */
@@ -701,24 +765,32 @@ function L_growthPct(now, delta){
 }
 
 /* ---------------- the transform ---------------- */
-function buildData(accCsv){
+function buildData(board, accCsv){
   const A = parseCSV(accCsv);
   if(A.length < 2) throw new Error('empty sheet export');
-  const hdr = A[0].map(h => h.trim());   // the source headers carry trailing spaces
+  const hdr = A[0].map(h => h.trim());   // some headers carry trailing spaces
   const rowsIn = A.slice(1);
 
   const ix = name => { const i = hdr.indexOf(name); if(i < 0) throw new Error('missing column: '+name); return i; };
+  /* the first column has been renamed once already, so resolve it by any of the
+     names it has gone by and fall back to position rather than throwing */
+  const pick = (cands, fallback) => {
+    for(const c of cands){ const i = hdr.indexOf(c); if(i >= 0) return i; }
+    if(fallback != null) return fallback;
+    throw new Error('missing column: ' + cands[0]);
+  };
   const a = {};
-  ['Domain','Company HQ','Industry','Singapore Hiring','Global Hiring','Linkedin URL',
+  ['Domain','Company HQ','Industry','Singapore Hiring','Global Hiring',
    'Revenue','Intent Score','Intent Topics','IT Headcount','IT HC (3M)','IT HC (6M)','IT HC (12M)',
    'Company Headcount','Company Headcount (3M)','Company Headcount (6M)','Company Headcount (12M)']
    .forEach(k => a[k] = ix(k));
-  a.name = 0;                            // "Existing Accounts - If any — ..."
+  a.name = pick(board.nameCols, 0);
+  a.li   = pick(board.liCols, -1);
   const sigIx = L_SIGNALS.map(([, col]) => ix(col));
 
-  /* Domain is the identity the whole board keys on. Five domains appear twice
-     under two legal names — the same company listed as two rows — so the
-     collision is counted and named rather than silently double-counted. */
+  /* Domain is the identity each board keys on. Where two rows share one, they
+     are the same company entered twice; the collision is counted and named
+     rather than silently double-counted. */
   const nameFreq = new Map(), domFreq = new Map();
   const bump = (m,k) => m.set(k, (m.get(k)||0)+1);
   for(const r of rowsIn){
@@ -754,27 +826,23 @@ function buildData(accCsv){
     const dev = tps.some(t => L_DEVICE_TOPICS.has(t)) ? 1 : 0;
     const eol = tps.some(t => L_EOL_TOPICS.has(t)) ? 1 : 0;
 
-
-
     const rec = {
       n:name, d:dom, ind:L_title(r[a['Industry']]), hq:L_title(r[a['Company HQ']]),
-      bnd:L_hcBand(hc), itb:L_itBand(ithc),
+      bnd:board.hcBand(hc), itb:board.itBand(ithc),
       hc: hc==null?null:Math.trunc(hc), ithc: ithc==null?null:Math.trunc(ithc),
       rev: L_num(r[a['Revenue']]),
       g3, g6, g12, itg3, itg6, itg12,
       'is': ints, nt: tps.length, dev, eol, sh, gh,
-      li: L_clean(r[a['Linkedin URL']]) ? 1 : 0,
+      li: (a.li >= 0 && L_clean(r[a.li])) ? 1 : 0,
       dn: nameFreq.get(name.toLowerCase()) > 1 ? 1 : 0,
       dd: (dom && domFreq.get(dom) > 1) ? 1 : 0,
       s, t: tps,
     };
-    rec.pri = L_tier(rec);
+    rec.pri = tierWith(board, rec);
     out.push(rec);
   }
 
-  /* the same company listed twice under two legal names: same domain, same
-     headcount, two rows. Named here so the board can show them rather than
-     quietly counting one company as two accounts. */
+  /* the same company listed twice under two legal names: same domain, two rows */
   const dupes = [];
   for(const [dm, c] of domFreq) if(c > 1)
     dupes.push([dm, [...new Set(out.filter(x=>x.d===dm).map(x=>x.n))].sort()]);
@@ -798,7 +866,6 @@ function buildData(accCsv){
   const n = out.length;
   const cnt = f => out.reduce((s,x)=>s+(f(x)?1:0), 0);
   const famHit = k => cnt(x => L_FAM_IX[k][1].some(i => x.s[i]));
-  // rows are not companies: five domains appear twice under two legal names
   const distinct = new Set(out.filter(x=>x.d).map(x=>x.d)).size + cnt(x=>!x.d);
   const cov = {
     given: rowsIn.length, rows: n, distinct,
@@ -807,21 +874,28 @@ function buildData(accCsv){
     intent: cnt(x=>x['is'] > 0), device: cnt(x=>x.dev), eol: cnt(x=>x.eol),
     hc: cnt(x=>x.hc != null), ithc: cnt(x=>x.ithc != null), rev: cnt(x=>x.rev != null),
     firmo: cnt(x=>x.ind !== 'Unknown' && x.hq !== 'Unknown'),
+    sgp: cnt(x=>x.s[L_SIX['Singapore regional presence']] || x.s[L_SIX['Singapore market activity']]
+                || x.hq === 'Singapore'),
     dupname: cnt(x=>x.dn), dupdom: cnt(x=>x.dd),
     ai: famHit(0), work: famHit(1), mod: famHit(2), grow: famHit(3),
   };
+  /* how much of each test the board could even evaluate — a test resting on a
+     column the sheet barely fills is reported rather than quietly scoring zero */
+  const testHits = {};
+  board.tests.forEach(t => testHits[t.key] = cnt(t.of));
 
   const topN = (m,k) => [...m.entries()].sort((x,y)=> y[1]-x[1]).slice(0,k);
   const dict = {}; for(const k in DICTS) dict[k] = DICTS[k].list;
 
   return {
+    board: board.key,
     dict,
     accounts: {cols: COLS, rows: packed, n},
     summary: {
       signals: L_SIG_LABELS, families: L_FAM_IX,
-      hcBands: HC_BANDS, itBands: IT_BANDS,
+      hcBands: board.hcBands, itBands: board.itBands,
       deviceTopics: [...L_DEVICE_TOPICS].sort(), eolTopics: [...L_EOL_TOPICS].sort(),
-      topics: topN(topicCount, 25), dupes, cov,
+      topics: topN(topicCount, 25), dupes, cov, testHits,
     },
   };
 }
@@ -833,9 +907,12 @@ function buildData(accCsv){
    ============================================================ */
 
 /* ---------------- dictionaries & hydration ----------------
-   These are re-bound whenever a fresh copy of the sheet arrives, so they are
-   `let`, not `const`. Everything downstream reads them at render time.       */
-let DATA, SIG, FAMS, HCB, ITB, ACC, L, RX;
+   Both boards are derived and held at once; these globals point at whichever is
+   on screen and are re-bound by useBoard(). Everything downstream reads them at
+   render time, which is why they are `let`, not `const`.                     */
+const RAW = {};            // board key -> the derived payload
+const HYD = {};            // board key -> { rows, L, RX }
+let BOARD, DATA, SIG, FAMS, HCB, ITB, REV_BANDS, TESTS, TIERS, ACC, L, RX;
 
 function hydrate(ds){
   const cols = ds.cols;
@@ -845,58 +922,85 @@ function hydrate(ds){
 /* Filter selections are held as dictionary indices, but the dictionaries are
    built in row order — so a sheet edit can shift them. Carry the selections
    across by label and drop anything that no longer exists. */
-function remapFilters(oldL){
-  FILTERS.forEach(({key, dict}) => {
-    const set = S[key];
+function remapFilters(key, oldL, newRX){
+  FILTERS.forEach(({key:f, dict}) => {
+    const set = S[key][f];
     if(!set || !set.size) return;
     const labels = [...set].map(i => oldL[dict][i]).filter(v => v != null);
     set.clear();
-    labels.forEach(lbl => { const i = RX[dict][lbl]; if(i != null) set.add(i); });
+    labels.forEach(lbl => { const i = newRX[dict][lbl]; if(i != null) set.add(i); });
   });
 }
 
-function adopt(raw){
-  const oldL = L;
-  DATA = raw;
-  SIG  = raw.summary.signals;
-  FAMS = raw.summary.families;
-  HCB  = raw.summary.hcBands;
-  ITB  = raw.summary.itBands;
+/* Store a freshly-derived board. Only re-binds the globals if it is the board
+   currently on screen — a background refresh of the other one must not repaint
+   this one out from under the reader. */
+function adopt(key, raw){
+  const prev = HYD[key];
   const d = raw.dict;
-  L = { ind:d.ind||[], hq:d.hq||[], bnd:d.bnd||[], itb:d.itb||[], pri:d.pri||[], topic:d.topic||[] };
-  RX = {}; for(const k in L){ RX[k] = {}; L[k].forEach((v,i)=>RX[k][v]=i); }
-  ACC = hydrate(raw.accounts);
-  if(oldL) remapFilters(oldL);
+  const l = { ind:d.ind||[], hq:d.hq||[], bnd:d.bnd||[], itb:d.itb||[], pri:d.pri||[], topic:d.topic||[] };
+  const rx = {}; for(const k in l){ rx[k] = {}; l[k].forEach((v,i)=>rx[k][v]=i); }
+  RAW[key] = raw;
+  HYD[key] = { rows: hydrate(raw.accounts), L: l, RX: rx };
+  if(prev) remapFilters(key, prev.L, rx);
+  if(key === S.board) useBoard(key);
+}
+
+function useBoard(key){
+  S.board = key;
+  BOARD = BOARD_OF[key];
+  DATA  = RAW[key];
+  const h = HYD[key];
+  ACC = h.rows; L = h.L; RX = h.RX;
+  SIG  = DATA.summary.signals;
+  FAMS = DATA.summary.families;
+  HCB  = DATA.summary.hcBands;
+  ITB  = DATA.summary.itBands;
+  REV_BANDS = BOARD.revBands;
+  TESTS = BOARD.tests;
+  TIERS = BOARD.tiers;
+  if(typeof document !== 'undefined' && document.body) document.body.dataset.board = key;
 }
 
 const PRI_ORDER = ['P0','P1','P2','P3','Unranked'];
 
-/* ---------------- state ---------------- */
+/* ---------------- state ----------------
+   Filters, the cohort and the card controls are held per board, so switching
+   tabs does not carry one board's industry selection onto the other's. */
 const FILTERS = [
   {key:'ind', dict:'ind', label:'Industry',   plural:'industries'},
   {key:'hq',  dict:'hq',  label:'HQ country', plural:'countries'},
   {key:'bnd', dict:'bnd', label:'Headcount',  plural:'headcount bands'},
 ];
-const S = { cohort:{groups:[]}, intentMin:1, gWin:'12', itWin:'12' };
-FILTERS.forEach(f => S[f.key] = new Set());
-const F = () => S;
+const blankBoardState = () => {
+  const o = { cohort:{groups:[]}, intentMin:1, gWin:'12', itWin:'12' };
+  FILTERS.forEach(f => o[f.key] = new Set());
+  return o;
+};
+const S = { board: BOARDS[0].key };
+BOARDS.forEach(b => S[b.key] = blankBoardState());
+const F = () => S[S.board];
 const WINLBL = {'3':'3-month','6':'6-month','12':'12-month'};
 
-/* No data is embedded in this file — see the README. `adopt` still needs a
-   well-formed dataset to boot from, so it gets an empty one and the page paints
-   the boot panel until the first sheet read lands. */
-function emptyDataset(){
+/* No data is embedded in this file — see the README. useBoard() still needs a
+   well-formed dataset to boot from, so both boards get an empty one and the page
+   paints the boot panel until the first sheet read lands. */
+function emptyDataset(board){
   const zero = {};
   ['given','rows','distinct','domain','li','signal','intent','device','eol','hc','ithc',
-   'rev','firmo','dupname','dupdom','ai','work','mod','grow'].forEach(k => zero[k] = 0);
+   'rev','firmo','sgp','dupname','dupdom','ai','work','mod','grow'].forEach(k => zero[k] = 0);
+  const th = {}; board.tests.forEach(t => th[t.key] = 0);
   return {
+    board: board.key,
     dict: {ind:[], hq:[], bnd:[], itb:[], pri:[], topic:[]},
     accounts: {cols:[], rows:[], n:0},
-    summary: {signals:L_SIG_LABELS, families:L_FAM_IX, hcBands:HC_BANDS, itBands:IT_BANDS,
-              deviceTopics:[], eolTopics:[], topics:[], dupes:[], cov:zero},
+    summary: {signals:L_SIG_LABELS, families:L_FAM_IX,
+              hcBands:board.hcBands, itBands:board.itBands,
+              deviceTopics:[], eolTopics:[], topics:[], dupes:[], cov:zero, testHits:th},
   };
 }
-adopt(SNAPSHOT || emptyDataset());
+BOARDS.forEach(b => adopt(b.key, (SNAPSHOT && SNAPSHOT[b.key]) || emptyDataset(b)));
+useBoard(S.board);
 
 /* ---------------- helpers ---------------- */
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -912,9 +1016,6 @@ function rankSort(entries){ // [label,value] desc, placeholder labels pushed las
   return entries.sort((a,b)=>{ const pa=isPlace(a[0]), pb=isPlace(b[0]);
     if(pa!==pb) return pa?1:-1; return b[1]-a[1]; });
 }
-/* revenue is a raw figure; band it so the card reads as a distribution */
-const REV_BANDS = [['< $10M',0,1e7],['$10 – 100M',1e7,1e8],['$100M – 1B',1e8,1e9],
-                   ['$1 – 10B',1e9,1e10],['$10B+',1e10,Infinity]];
 /* 12-month company headcount change, banded. "Flat" is its own band because a
    headcount that has not moved is a different story from one that is shrinking. */
 const MOM_BANDS = [['Shrinking',-Infinity,-0.05],['Flat to +5%',-0.05,5],
@@ -954,7 +1055,18 @@ const FIELDS_DEF = {
   itb:     {label:'IT organisation size',         type:'multi', opts:()=>ITB.map(b=>[b,b]),
             test:(x,v)=>L.itb[x.itb]===v, def:{op:'in',val:['200 – 999','1,000+']}},
 };
-const FIELDS = () => FIELDS_DEF;
+/* A field resting on a column the board's sheet barely fills would offer a
+   filter that silently matches nothing, so it is left out of that board. */
+const FIELD_NEEDS = { intent:'hasIntent', ntopic:'hasIntent', dev:'hasIntent', eol:'hasIntent',
+                      ithc:'hasITHC', itgrowth:'hasITHC', itb:'hasITHC' };
+function FIELDS(){
+  const out = {};
+  for(const k in FIELDS_DEF){
+    const need = FIELD_NEEDS[k];
+    if(!need || BOARD[need]) out[k] = FIELDS_DEF[k];
+  }
+  return out;
+}
 
 const NUM_OPS   = {'>':'>','>=':'≥','<':'<','<=':'≤','=':'='};
 const MULTI_OPS = {in:'is any of', nin:'is none of', hasany:'has any of', hasall:'has all of', hasnone:'has none of'};
@@ -981,13 +1093,13 @@ function matchCond(x,c){
   return c.op==='>'?v>t : c.op==='>='?v>=t : c.op==='<'?v<t : c.op==='<='?v<=t : v===t;
 }
 const grpActive = g => g.conds.length > 0;
-const cohortActive = () => S.cohort.groups.some(grpActive);
-const matchCohort = x => S.cohort.groups.some(g => grpActive(g) && g.conds.every(c=>matchCond(x,c)));
+const cohortActive = () => F().cohort.groups.some(grpActive);
+const matchCohort = x => F().cohort.groups.some(g => grpActive(g) && g.conds.every(c=>matchCond(x,c)));
 
 /* ---------------- filtering ---------------- */
 function rows(){
   let a = ACC;
-  FILTERS.forEach(({key}) => { const set = S[key]; if(set && set.size) a = a.filter(x=>set.has(x[key])); });
+  FILTERS.forEach(({key}) => { const set = F()[key]; if(set && set.size) a = a.filter(x=>set.has(x[key])); });
   if(cohortActive()) a = a.filter(matchCohort);
   return a;
 }
@@ -1215,7 +1327,7 @@ function meters(box, groups){
   });
   box.appendChild(wrap);
   $$('.win-sel').forEach(sel => sel.addEventListener('change', ()=>{
-    if(sel.dataset.win==='g') S.gWin = sel.value; else S.itWin = sel.value;
+    if(sel.dataset.win==='g') F().gWin = sel.value; else F().itWin = sel.value;
     renderCards();
   }));
   bindIntentInput();
@@ -1263,17 +1375,17 @@ function table(box, head, body, note){
 function intentRowLabel(){
   return `Active third-party intent
     <span class="intent-wrap">min score
-      <input class="intent-input num" id="intentInput" type="number" min="0" step="1" value="${S.intentMin}" aria-label="Minimum intent score">
+      <input class="intent-input num" id="intentInput" type="number" min="0" step="1" value="${F().intentMin}" aria-label="Minimum intent score">
       <span class="stepper"><button id="intUp" type="button" aria-label="Increase">&#9650;</button><button id="intDn" type="button" aria-label="Decrease">&#9660;</button></span>
     </span>`;
 }
 function bindIntentInput(){
   const inp = $('#intentInput'); if(!inp) return;
-  const set = v => { S.intentMin = Math.max(0, Math.round(v)||0); renderCards(); renderKpis();
-                     const i2 = $('#intentInput'); if(i2){ i2.value = S.intentMin; i2.focus(); } };
+  const set = v => { F().intentMin = Math.max(0, Math.round(v)||0); renderCards(); renderKpis();
+                     const i2 = $('#intentInput'); if(i2){ i2.value = F().intentMin; i2.focus(); } };
   inp.addEventListener('change', e => set(parseInt(e.target.value||'0',10)));
-  $('#intUp').addEventListener('click', ()=>set(S.intentMin+1));
-  $('#intDn').addEventListener('click', ()=>set(S.intentMin-1));
+  $('#intUp').addEventListener('click', ()=>set(F().intentMin+1));
+  $('#intDn').addEventListener('click', ()=>set(F().intentMin-1));
 }
 
 /* ============================================================
@@ -1294,11 +1406,15 @@ const CARDS = [
   { cls:'c12', title:'Portfolio Data Coverage', desc:'Enrichment quality of the full portfolio · not affected by filters', tag:true,
     render(box){
       const c = DATA.summary.cov;
+      /* the last two tiles report whatever the board actually has: the existing
+         sheet carries intent and IT headcount, the net-new one carries neither */
       rings(box, [
         {label:'Domain resolved',    n:c.domain, d:c.rows, sub:'accounts mapped to a company domain'},
-        {label:'IT headcount known', n:c.ithc,   d:c.rows, sub:'have an IT team size on file'},
+        {label:'Reported revenue',   n:c.rev,    d:c.rows, sub:'have an annual revenue figure'},
         {label:'Signal-enriched',    n:c.signal, d:c.rows, sub:'carry at least one buying signal'},
-        {label:'Device-level intent',n:c.device, d:c.rows, sub:'researching a device, OS or desktop service'},
+        BOARD.hasIntent
+          ? {label:'Device-level intent', n:c.device, d:c.rows, sub:'researching a device, OS or desktop service'}
+          : {label:'Singapore footprint', n:c.sgp, d:c.rows, sub:'confirmed Singapore presence or activity'},
       ]);
       const dupes = DATA.summary.dupes || [];
       if(dupes.length){
@@ -1317,7 +1433,7 @@ const CARDS = [
       h1.innerHTML = 'The five tests <span>each one is checked independently for every account</span>';
       box.appendChild(h1);
       const grid = document.createElement('div'); grid.className = 'tests';
-      L_TESTS.forEach(t=>{
+      TESTS.forEach(t=>{
         const v = a.reduce((s,x)=>s+(t.of(x)?1:0),0);
         const d = document.createElement('div'); d.className = 'test';
         d.innerHTML = `<div class="tl">${esc(t.label)}</div>`
@@ -1335,7 +1451,7 @@ const CARDS = [
       box.appendChild(h2);
       const lad = document.createElement('div'); lad.className = 'ladder';
       const m = tally(a,'pri');
-      L_TIERS.forEach(t=>{
+      TIERS.forEach(t=>{
         const v = m.get(RX.pri[t.tier]) || 0;
         const d = document.createElement('div'); d.className = 'rung';
         d.style.borderLeftColor = PRI_COL(t.tier);
@@ -1364,31 +1480,37 @@ const CARDS = [
         + `smaller than the sum of the bars beneath it. Bars are scaled against the single most common signal across `
         + `all four families, which is what makes the families comparable to each other.`);
     }},
-  { cls:'c5', title:'Growth, Hiring & Intent', desc:'Momentum indicators · intent threshold and growth window are editable', tag:true,
+  { cls:'c5', title(){ return BOARD.hasIntent ? 'Growth, Hiring & Intent' : 'Growth & Hiring'; },
+    desc(){ return BOARD.hasIntent
+      ? 'Momentum indicators · intent threshold and growth window are editable'
+      : 'Momentum indicators · the growth window is editable'; }, tag:true,
     render(box){
       const a = rows(), n = a.length;
       if(!n) return emptyBox(box);
       const over = (k,t) => a.reduce((s,x)=>s+(x[k]!=null && x[k]>t?1:0),0);
       const atLeast = (k,t) => a.reduce((s,x)=>s+((x[k]||0)>=t?1:0),0);
-      meters(box, [
-        {rows:[{label:intentRowLabel(), value:a.reduce((s,x)=>s+(x['is']>=S.intentMin?1:0),0), of:n,
-                noun:`accounts · score ≥ ${S.intentMin}`, tip:`Third-party intent score ≥ ${S.intentMin}`}]},
+      const groups = [];
+      if(BOARD.hasIntent) groups.push(
+        {rows:[{label:intentRowLabel(), value:a.reduce((s,x)=>s+(x['is']>=F().intentMin?1:0),0), of:n,
+                noun:`accounts · score ≥ ${F().intentMin}`, tip:`Third-party intent score ≥ ${F().intentMin}`}]});
+      groups.push(
         {glabel:'Open roles', rows:[
           {label:'Hiring in Singapore', value:atLeast('sh',1), of:n, noun:'accounts', tip:'At least one open Singapore role'},
           {label:'Hiring anywhere',     value:atLeast('gh',1), of:n, noun:'accounts', tip:'At least one open role globally'},
         ]},
-        {glabel:'Company headcount growth', win:{key:'g',cur:S.gWin},
-         rows:[5,10].map(t=>({label:`&gt; ${t}%`, value:over('g'+S.gWin,t), of:n, noun:'accounts',
-                              tip:`Company headcount growth (${WINLBL[S.gWin]}) > ${t}%`}))},
-        {glabel:'IT headcount growth', win:{key:'it',cur:S.itWin},
-         rows:[5,10].map(t=>({label:`&gt; ${t}%`, value:over('itg'+S.itWin,t), of:n, noun:'accounts',
-                              tip:`IT headcount growth (${WINLBL[S.itWin]}) > ${t}%`}))},
-      ]);
-      const hcN = a.reduce((s,x)=>s+(x['g'+S.gWin]!=null?1:0),0);
-      const itN = a.reduce((s,x)=>s+(x['itg'+S.itWin]!=null?1:0),0);
+        {glabel:'Company headcount growth', win:{key:'g',cur:F().gWin},
+         rows:[5,10].map(t=>({label:`&gt; ${t}%`, value:over('g'+F().gWin,t), of:n, noun:'accounts',
+                              tip:`Company headcount growth (${WINLBL[F().gWin]}) > ${t}%`}))},
+      );
+      if(BOARD.hasITHC) groups.push(
+        {glabel:'IT headcount growth', win:{key:'it',cur:F().itWin},
+         rows:[5,10].map(t=>({label:`&gt; ${t}%`, value:over('itg'+F().itWin,t), of:n, noun:'accounts',
+                              tip:`IT headcount growth (${WINLBL[F().itWin]}) > ${t}%`}))});
+      meters(box, groups);
+      const hcN = a.reduce((s,x)=>s+(x['g'+F().gWin]!=null?1:0),0);
       addNote(box, `Percentages are of all <span class="num">${fmt(n)}</span> accounts in view. Headcount history for `
-        + `this window is available for <span class="num">${fmt(hcN)}</span> of them and IT headcount history for `
-        + `<span class="num">${fmt(itN)}</span>; accounts without history never clear a growth threshold.`);
+        + `this window is available for <span class="num">${fmt(hcN)}</span> of them; accounts without history never `
+        + `clear a growth threshold.`);
     }},
   { cls:'c5', title:'Account Prioritization', desc:'Distribution across priority tiers · rules are set out in full above · P0 is hottest', tag:true,
     render(box){
@@ -1422,6 +1544,7 @@ const CARDS = [
                  : 'so on the current filters the tiers are no longer strictly ordered by evidence.'}`);
     }},
   { cls:'c7', title:'The Device-Refresh Wedge', info:EOL_INFO, desc:'How many accounts in view are already pricing hardware', tag:'hot',
+    when: b => b.hasIntent,
     render(box){
       const a = rows(), n = a.length;
       if(!n) return emptyBox(box);
@@ -1452,6 +1575,40 @@ const CARDS = [
       addNote(box, `<span class="num">${fmt(both)}</span> accounts in view are researching devices <b>and</b> running an `
         + `AI programme — the AI PC conversation, where the device budget and the AI budget are the same budget.`);
     }},
+  { cls:'c7', title:'The Way In', desc:'What gives a cold account a reason to take the call', tag:true,
+    when: b => !b.hasIntent,
+    render(box){
+      const a = rows(), n = a.length;
+      if(!n) return emptyBox(box);
+      const c = f => a.reduce((s,x)=>s+(f(x)?1:0),0);
+      const sig = k => c(x=>x.s[L_SIX[k]]);
+      meters(box, [
+        {glabel:'Something is changing', rows:[
+          {label:'New or expanded Singapore office', value:c(x=>x.s[L_SIX['Singapore office status']] || x.s[L_SIX['Singapore office expansion']]),
+           of:n, noun:'accounts', hot:true, tip:'A new address or an expansion — the moment a fleet gets specified'},
+          {label:'Technology recently deployed', value:sig('Singapore tech deployments'), of:n, noun:'accounts', hot:true,
+           tip:'Has put technology into its Singapore operation recently'},
+          {label:'Hybrid or office-policy change', value:sig('Office / hybrid policy'), of:n, noun:'accounts',
+           tip:'Has published a hybrid or in-office working policy'},
+        ]},
+        {glabel:'They are growing', rows:[
+          {label:'Hiring trend in Singapore', value:sig('Singapore hiring trend'), of:n, noun:'accounts',
+           tip:'Evidence of recent Singapore hiring'},
+          {label:'Funding or a government grant', value:c(x=>x.s[L_SIX['Funding impact']] || x.s[L_SIX['Government grant support']]),
+           of:n, noun:'accounts', tip:'Funding landed, or grant support that pays for technology'},
+        ]},
+        {glabel:'They already spend on technology', rows:[
+          {label:'AI programme live in Singapore', value:c(x=>FAMS[0][1].some(i=>x.s[i])), of:n, noun:'accounts',
+           tip:'Any AI or Copilot activity on the ground in Singapore'},
+          {label:'Modernisation work under way', value:c(x=>FAMS[2][1].some(i=>x.s[i])), of:n, noun:'accounts',
+           tip:'Automation, transformation, cloud, network, security or resilience work'},
+        ]},
+      ]);
+      addNote(box, `This list carries <b>no third-party intent</b> — it is on `
+        + `<span class="num">${fmt(DATA.summary.cov.intent)}</span> of <span class="num">${fmt(DATA.summary.cov.rows)}</span> `
+        + `accounts — so nothing here says anyone is pricing hardware today. What it can say is which accounts have `
+        + `just changed something about how they work, which is the opening a cold call actually needs.`);
+    }},
   { cls:'c6', title:'Signal Intensity per Account', desc:`How many of the ${L_SIG_LABELS.length} distinct signals each account exhibits`, tag:true,
     render(box){
       const a = rows(), bins = new Array(SIG.length+1).fill(0);
@@ -1469,6 +1626,7 @@ const CARDS = [
         + `these are the ones where a discovery call has something to open with.`);
     }},
   { cls:'c6', title:'Intent Topics', info:EOL_INFO, desc:'Third-party topics researched by accounts in view · device topics in red · top 12',
+    when: b => b.hasIntent,
     render(box){
       const a = rows(), m = new Map();
       a.forEach(x=>x.t.forEach(t=>m.set(t,(m.get(t)||0)+1)));
@@ -1512,6 +1670,7 @@ const CARDS = [
         ramp:rampBy(e, HCB, 'p')});
     }},
   { cls:'c6', title:'IT Organisation Size', desc:'Who would run the deployment · filterable under Advanced',
+    when: b => b.hasITHC,
     render(box){
       const a = rows(), m = tally(a,'itb');
       const e = ITB.filter(b=>RX.itb[b]!=null).map(b=>[b, m.get(RX.itb[b])||0]).filter(x=>x[1]);
@@ -1544,20 +1703,29 @@ const CARDS = [
       addNote(box, `&ldquo;No history&rdquo; is an account whose headcount 12 months ago cannot be reconstructed from `
         + `the sheet — the change column is blank, or it implies a base of zero. Those accounts are not counted as flat.`);
     }},
-  { cls:'c12', title:'Where to Start', desc:'Highest-priority accounts in view · ranked by tier, then signal breadth, IT scale and intent',
+  { cls:'c12', title:'Where to Start',
+    desc(){ return 'Highest-priority accounts in view · ranked by tier, then signal breadth, '
+      + (BOARD.hasIntent ? 'IT scale and intent' : 'headcount and growth'); },
     render(box){
       const a = rows().slice().sort((x,y)=>{
         const px = PRI_ORDER.indexOf(L.pri[x.pri]), py = PRI_ORDER.indexOf(L.pri[y.pri]);
         if(px!==py) return px-py;
         const sx = nsigOf(x), sy = nsigOf(y);
         if(sx!==sy) return sy-sx;
-        if((y.ithc||0)!==(x.ithc||0)) return (y.ithc||0)-(x.ithc||0);
-        if(x['is']!==y['is']) return y['is']-x['is'];
+        if(BOARD.hasIntent){
+          if((y.ithc||0)!==(x.ithc||0)) return (y.ithc||0)-(x.ithc||0);
+          if(x['is']!==y['is']) return y['is']-x['is'];
+        } else if((y.g12||0)!==(x.g12||0)) return (y.g12||0)-(x.g12||0);
         return (y.hc||0)-(x.hc||0);
       }).slice(0,25);
+      const intentCols = [{label:'IT staff',cls:'num r'},{label:'Intent',cls:'num r'},{label:'Researching'}];
+      const growthCols = [{label:'HC growth 12M',cls:'num r'},{label:'Hiring',cls:'num r'},{label:'Way in'}];
       table(box,
-        [{label:'Account'},{label:'Industry'},{label:'Headcount',cls:'num r'},{label:'IT staff',cls:'num r'},
-         {label:'Signals',cls:'num'},{label:'Intent',cls:'num r'},{label:'Researching'},{label:'Tier'}],
+        [{label:'Account'},{label:'Industry'},{label:'Headcount',cls:'num r'},
+         ...(BOARD.hasIntent ? [intentCols[0]] : [growthCols[0]]),
+         {label:'Signals',cls:'num'},
+         ...(BOARD.hasIntent ? intentCols.slice(1) : growthCols.slice(1)),
+         {label:'Tier'}],
         a.map(x=>{
           // the strip is grouped the way the prevalence card is, with a gap
           // between families, so a dense block reads as "one whole family lit up"
@@ -1571,17 +1739,24 @@ const CARDS = [
           const nmTxt = esc(clip(x.n,40));
           const dom = x.d ? `<div class="sub">${esc(clip(x.d,34))}</div>` : '';
           const nm = (x.d ? `<a href="https://${esc(x.d)}" target="_blank" rel="noopener noreferrer">${nmTxt}</a>` : nmTxt) + dom;
-          const res = x.eol ? '<span class="eol">Windows / AI PC</span>'
-                    : x.dev ? '<span class="eol" style="background:var(--brand-soft);color:var(--brand-str)">Devices</span>'
-                    : '<span style="color:var(--muted)">–</span>';
+          const dim = '<span style="color:var(--muted)">–</span>';
+          const chip = (t,brand) => `<span class="eol"${brand?' style="background:var(--brand-soft);color:var(--brand-str)"':''}>${t}</span>`;
+          const res = x.eol ? chip('Windows / AI PC') : x.dev ? chip('Devices', true) : dim;
+          /* the net-new board has no intent to report, so the same three slots
+             carry the growth and workplace evidence it does have */
+          const wayIn = (x.s[L_SIX['Singapore office status']] || x.s[L_SIX['Singapore office expansion']]) ? chip('Office move')
+                      : x.s[L_SIX['Singapore tech deployments']] ? chip('Deploying', true)
+                      : x.s[L_SIX['Office / hybrid policy']] ? chip('Hybrid policy', true) : dim;
+          const growth = x.g12==null ? '–' : (x.g12>0?'+':'')+x.g12+'%';
+          const hiring = (x.sh||x.gh) ? fmt(x.sh||x.gh) : '–';
           return [
             {html:nm, cls:'nm'},
             {html:esc(clip(L.ind[x.ind],24)), cls:'dim'},
             {html:x.hc==null?'–':fmt(x.hc), cls:'num r'},
-            {html:x.ithc==null?'–':fmt(x.ithc), cls:'num r'},
+            {html:BOARD.hasIntent ? (x.ithc==null?'–':fmt(x.ithc)) : growth, cls:'num r'},
             {html:strip, cls:'num'},
-            {html:x['is']||'–', cls:'num r'},
-            {html:res},
+            {html:BOARD.hasIntent ? (x['is']||'–') : hiring, cls:'num r'},
+            {html:BOARD.hasIntent ? res : wayIn},
             {html:`<span class="pill ${L.pri[x.pri].replace(/\s/g,'')}">${esc(L.pri[x.pri])}</span>`},
           ];
         }),
@@ -1594,7 +1769,9 @@ const CARDS = [
       });
     }},
 ];
-const cards = () => CARDS;
+/* A card that leans on a column one of the sheets barely fills is left out of
+   that board rather than drawn as a row of zeros. */
+const cards = () => CARDS.filter(c => !c.when || c.when(BOARD));
 
 /* ============================================================
    KPIs
@@ -1603,27 +1780,41 @@ function kpiSpecs(){
   const a = rows(), n = a.length;
   const c = f => a.reduce((s,x)=>s+(f(x)?1:0),0);
   const p01 = c(x=>['P0','P1'].includes(L.pri[x.pri]));
-  const dev = c(x=>x.dev);
   const ai  = c(x=>FAMS[0][1].some(i=>x.s[i]));
-  const fleet = c(x=>x.ithc!=null && x.ithc>=50);
-  /* every tile reads the same way: the share, the count it came from, then a
-     sentence saying what it means. The first has no share to show — it is the
-     denominator — so it states the count and what the count currently is. */
   const filtered = n !== total();
   const acc = v => `${fmt(v)} account${v === 1 ? '' : 's'}`;
-  return [
+  const head = [
     {l:'Accounts in view', v:fmt(n), cnt: filtered ? `of ${fmt(total())}` : '',
      sub: filtered ? 'Accounts matching the filters currently applied'
-                   : 'Total accounts in the portfolio'},
+                   : `Total accounts in the ${BOARD.hasIntent ? 'portfolio' : 'net-new list'}`},
     {l:'Priority P0 + P1', v:pct(p01,n), u:'%', cnt:acc(p01),
      sub:'High-priority accounts worth contacting this quarter'},
-    {l:'Pricing hardware now', v:pct(dev,n), u:'%', hot:true, cnt:acc(dev),
-     sub:'Accounts showing interest in purchasing hardware'},
+  ];
+  if(BOARD.hasIntent){
+    const dev = c(x=>x.dev), fleet = c(x=>x.ithc!=null && x.ithc>=50);
+    return head.concat([
+      {l:'Pricing hardware now', v:pct(dev,n), u:'%', hot:true, cnt:acc(dev),
+       sub:'Accounts showing interest in purchasing hardware'},
+      {l:'AI programme live', v:pct(ai,n), u:'%', cnt:acc(ai),
+       sub:'Accounts with an active AI programme and potential AI PC opportunity'},
+      {l:'IT team of 50+', v:pct(fleet,n), u:'%', cnt:acc(fleet),
+       sub:'Accounts with large enough IT teams to manage their own rollout'},
+    ]);
+  }
+  /* no intent and almost no IT headcount on this board, so the three that follow
+     report what the net-new sheet does carry */
+  const moment = c(x=>FAMS[1][1].some(i=>x.s[i]));
+  const growing = c(x=>x.s[L_SIX['Singapore hiring trend']] || x.sh >= 1 || x.gh >= 1
+                       || (x.g12 != null && x.g12 >= 5));
+  const scale = c(x=>x.hc != null && x.hc >= 50);
+  return head.concat([
+    {l:'Workplace moment', v:pct(moment,n), u:'%', hot:true, cnt:acc(moment),
+     sub:'Accounts that have just changed office, policy or technology'},
     {l:'AI programme live', v:pct(ai,n), u:'%', cnt:acc(ai),
      sub:'Accounts with an active AI programme and potential AI PC opportunity'},
-    {l:'IT team of 50+', v:pct(fleet,n), u:'%', cnt:acc(fleet),
-     sub:'Accounts with large enough IT teams to manage their own rollout'},
-  ];
+    {l:'Growing headcount', v:pct(growing,n), u:'%', cnt:acc(growing),
+     sub:`Accounts hiring or up 5% over twelve months · ${fmt(scale)} have 50+ staff`},
+  ]);
 }
 function renderKpis(){
   const box = $('#kpis'); box.innerHTML = '';
@@ -1645,11 +1836,12 @@ function renderCards(){
   cards().forEach(c=>{
     const card = document.createElement('div'); card.className = 'card ' + c.cls;
     const tag = c.tag === 'hot' ? '<div class="tag hot">Refresh</div>' : c.tag ? '<div class="tag">Portfolio</div>' : '';
-    card.innerHTML = `<div class="card-h"><div><div class="card-t">${esc(c.title)}${c.info||''}</div>
-      <div class="card-d">${c.desc}</div></div>${tag}</div><div class="chart"></div>`;
+    const val = v => typeof v === 'function' ? v() : v;
+    card.innerHTML = `<div class="card-h"><div><div class="card-t">${esc(val(c.title))}${c.info||''}</div>
+      <div class="card-d">${val(c.desc)}</div></div>${tag}</div><div class="chart"></div>`;
     grid.appendChild(card);
     try { c.render(card.querySelector('.chart')); }
-    catch(err){ card.querySelector('.chart').innerHTML = `<div class="empty">Could not draw this chart.</div>`; console.error(c.title, err); }
+    catch(err){ card.querySelector('.chart').innerHTML = `<div class="empty">Could not draw this chart.</div>`; console.error(val(c.title), err); }
   });
 }
 
@@ -1660,7 +1852,7 @@ const fspec = slot => FILTERS[slot];
 function labelSet(key){
   const spec = FILTERS.find(f=>f.key===key);
   if(!spec) return new Set();
-  return new Set([...S[key]].map(i=>L[spec.dict][i]));
+  return new Set([...F()[key]].map(i=>L[spec.dict][i]));
 }
 function optionUniverse(slot){
   const {key, dict} = fspec(slot);
@@ -1675,7 +1867,7 @@ function optionUniverse(slot){
 }
 function toggleFilter(key, ix){
   if(ix==null) return;
-  const set = S[key]; if(!set) return;
+  const set = F()[key]; if(!set) return;
   set.has(ix) ? set.delete(ix) : set.add(ix);
   renderAll();
 }
@@ -1686,7 +1878,7 @@ function buildPanel(slotId, btn){
   if(slotId==='adv'){ buildAdvPanel(fg); return; }
   const slot = +slotId.slice(1), spec = fspec(slot);
   panel = document.createElement('div'); panel.className = 'panel open';
-  const setRef = S[spec.key], opts = optionUniverse(slot);
+  const setRef = F()[spec.key], opts = optionUniverse(slot);
   panel.innerHTML = `<div class="panel-search"><input type="text" placeholder="Search ${esc(spec.plural)}…" aria-label="Search ${esc(spec.plural)}"></div>
     <div class="opts"></div><div class="panel-foot"><button class="mut" data-clr>Clear</button><button data-done>Done</button></div>`;
   const optsBox = panel.querySelector('.opts');
@@ -1712,7 +1904,7 @@ function buildPanel(slotId, btn){
 function closeOthers(open){ $$('.panel').forEach(p=>{ if(p!==open) p.classList.remove('open'); }); }
 function syncFilterButtons(){
   FILTERS.forEach((spec, slot)=>{
-    const set = S[spec.key], btn = document.querySelector(`.fbtn[data-f="f${slot}"]`);
+    const set = F()[spec.key], btn = document.querySelector(`.fbtn[data-f="f${slot}"]`);
     const t = btn.querySelector('.ftxt');
     btn.querySelector('.lbl').textContent = spec.label + ':';
     if(!set.size){ btn.classList.remove('has'); t.textContent = 'All'; return; }
@@ -1729,7 +1921,7 @@ function newCond(){ const k = firstField(), d = FIELDS()[k].def;
 function renderCohort(){
   const body = $('#adv-body'); if(!body) return;
   body.innerHTML = '';
-  const groups = S.cohort.groups;
+  const groups = F().cohort.groups;
   if(!groups.length){
     const e = document.createElement('div'); e.className = 'cohort-empty';
     e.innerHTML = `<p>No conditions yet. Build a segment such as <b>Researching devices is yes</b> AND
@@ -1801,7 +1993,7 @@ function condRow(g,c,gi,ci){
     row.appendChild(chips);
   }
   const del=document.createElement('button'); del.className='c-del'; del.innerHTML='&times;'; del.title='Remove condition';
-  del.addEventListener('click', ()=>{ g.conds.splice(ci,1); if(!g.conds.length) S.cohort.groups.splice(gi,1); renderCohort(); renderAll(); });
+  del.addEventListener('click', ()=>{ g.conds.splice(ci,1); if(!g.conds.length) F().cohort.groups.splice(gi,1); renderCohort(); renderAll(); });
   row.appendChild(del);
   return row;
 }
@@ -1818,14 +2010,14 @@ function buildAdvPanel(fg){
   const fgr = fg.getBoundingClientRect(), w = Math.min(680, innerWidth-24);
   const leftVp = Math.max(12, Math.min(fgr.right-w, innerWidth-w-12));
   panel.style.left = (leftVp-fgr.left)+'px'; panel.style.right='auto'; panel.style.width = w+'px';
-  panel.querySelector('#addGroup').addEventListener('click', ()=>{ S.cohort.groups.push({conds:[newCond()]}); renderCohort(); renderAll(); });
-  panel.querySelector('#clearCohort').addEventListener('click', ()=>{ S.cohort.groups = []; renderCohort(); renderAll(); });
+  panel.querySelector('#addGroup').addEventListener('click', ()=>{ F().cohort.groups.push({conds:[newCond()]}); renderCohort(); renderAll(); });
+  panel.querySelector('#clearCohort').addEventListener('click', ()=>{ F().cohort.groups = []; renderCohort(); renderAll(); });
   panel.querySelector('[data-done]').addEventListener('click', ()=>panel.classList.remove('open'));
   renderCohort(); updateAdvUI();
 }
 function updateAdvUI(){
   const active = cohortActive();
-  const nConds = S.cohort.groups.reduce((s,g)=>s+g.conds.length,0);
+  const nConds = F().cohort.groups.reduce((s,g)=>s+g.conds.length,0);
   const btn = document.querySelector('.fbtn[data-f="adv"]');
   if(btn){ btn.classList.toggle('has', active);
     btn.querySelector('.ftxt').innerHTML = active ? `<span class="cnt">${nConds}</span>` : ''; }
@@ -1855,13 +2047,13 @@ function renderBoot(failed, why){
   $('#grid').innerHTML =
     `<div class="card boot${failed ? ' failed' : ''}"><div class="boot-in">`
     + `<div class="boot-spin"></div><div>`
-    + `<div class="boot-t">${failed ? 'Could not reach the Google Sheet' : 'Reading the Google Sheet…'}</div>`
+    + `<div class="boot-t">${failed ? 'Could not reach the Google Sheets' : 'Reading the Google Sheets…'}</div>`
     + `<div class="boot-d">${failed
         ? (why ? esc(why) + '. ' : '')
           + 'Nothing is cached in the page itself, so there is nothing to show yet. '
           + 'It retries automatically; the pill above forces a retry now.'
-        : 'This page carries no embedded copy of the data — it reads the sheet live, '
-          + 'derives the board in your browser, and re-reads every '
+        : 'This page carries no embedded copy of the data — it reads both sheets live, '
+          + 'derives each board in your browser, and re-reads every '
           + Math.round(REFRESH_MS/1000) + ' seconds.'}</div>`
     + `</div></div></div>`;
 }
@@ -1883,6 +2075,28 @@ $('#themebtn').addEventListener('click', ()=>{
   $('#themebtn').innerHTML = TICON[t];
   $('#themebtn').title = `Theme: ${t}`;
 });
+/* ---------------- board tabs ----------------
+   Each tab carries its own row count, because the two sets are different sizes
+   as well as different populations. */
+function renderBoards(){
+  const box = $('#boards'); box.innerHTML = '';
+  BOARDS.forEach(b=>{
+    const n = (RAW[b.key] && RAW[b.key].accounts.n) || 0;
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.dataset.board = b.key; btn.setAttribute('role','tab');
+    btn.className = b.key === S.board ? 'active' : '';
+    btn.setAttribute('aria-selected', b.key === S.board ? 'true' : 'false');
+    btn.innerHTML = `<span class="bl">${esc(b.label)}</span><span class="bn">${n ? fmt(n) : '—'} accounts</span>`;
+    btn.addEventListener('click', ()=>{
+      if(b.key === S.board) return;
+      useBoard(b.key);
+      $$('.panel').forEach(p=>p.remove());   // option universes differ per board
+      renderBoards(); renderChrome(); renderAll();
+      window.scrollTo(0, 0);
+    });
+    box.appendChild(btn);
+  });
+}
 $$('.fbtn').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation(); buildPanel(b.dataset.f, b); }));
 document.addEventListener('click', e=>{
   if(!e.target.isConnected) return;          // node was re-rendered away, not an outside click
@@ -1895,9 +2109,9 @@ document.addEventListener('click', e=>{
   $$('.panel').forEach(p=>p.classList.remove('open'));
 });
 $('#reset').addEventListener('click', ()=>{
-  FILTERS.forEach(({key}) => S[key].clear());
-  S.cohort.groups = [];
-  S.intentMin = 1; S.gWin = '12'; S.itWin = '12';
+  FILTERS.forEach(({key}) => F()[key].clear());
+  F().cohort.groups = [];
+  const f = F(); f.intentMin = 1; f.gWin = '12'; f.itWin = '12';
   $$('.panel').forEach(p=>p.remove());
   renderAll();
 });
@@ -1918,32 +2132,35 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(stick);
 
 function renderChrome(){
   const c = DATA.summary.cov || {};
+  document.querySelector('.hsub').textContent =
+    `${BOARD.blurb} · signal enrichment by Sprouts`;
   if(NODATA()){
-    ['ps-rows','ps-sig'].forEach(id => $('#'+id).innerHTML = '&mdash;');
     $('#foot-src').innerHTML = 'Source: Google Sheet &middot; read live, nothing cached in this page';
     return;
   }
-  $('#ps-rows').textContent = fmt(DATA.accounts.n);
-  $('#ps-sig').textContent  = pct(c.signal||0, c.rows||1) + '%';
   $('#foot-src').innerHTML =
-      `Source: Google Sheet &middot; <b>${fmt(DATA.accounts.n)}</b> account rows`
+      `Source: Google Sheet &middot; <b>${esc(BOARD.label)}</b>`
+    + ` &middot; <b>${fmt(DATA.accounts.n)}</b> account rows`
     + ` &middot; <b>${fmt(c.distinct||0)}</b> distinct companies`
     + ` &middot; <b>${fmt(SIG.length)}</b> enrichment signals`;
 }
+renderBoards();
 renderChrome();
 renderAll();
 
 /* ============================================================
-   Live sync — re-derive from the sheet every REFRESH_MS
+   Live sync — re-derive both boards from their sheets every REFRESH_MS
    ============================================================ */
 /* Change detection fingerprints only the positional arrays and the dictionary
-   lists. Object key order differs between a Python-built snapshot and the
-   browser-built rebuild, so stringifying the whole payload would always
-   "differ" on the first sync even when the sheet is untouched. */
+   lists. Object key order differs between a Python-built payload and the
+   browser-built rebuild, so stringifying the whole thing would always "differ"
+   on the first sync even when the sheet is untouched. */
 const FP_KEYS = ['ind','hq','bnd','itb','pri','topic'];
 const fingerprint = raw => JSON.stringify([raw.accounts.rows, FP_KEYS.map(k => raw.dict[k] || [])]);
-let lastPayload = SNAPSHOT ? fingerprint(SNAPSHOT) : null;
-let syncing = false, pendingRaw = null, lastSyncAt = null;
+const lastPayload = {};          // board key -> fingerprint of what is on screen
+if(SNAPSHOT) BOARDS.forEach(b => { if(SNAPSHOT[b.key]) lastPayload[b.key] = fingerprint(SNAPSHOT[b.key]); });
+const pendingRaw  = {};          // board key -> a rebuild held back while a menu is open
+let syncing = false, lastSyncAt = null, lastErr = null;
 
 const liveEl = () => $('#live');
 function setLive(state, detail){
@@ -1956,65 +2173,80 @@ function setLive(state, detail){
 const clockOf = d => d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 function panelOpen(){ return !!document.querySelector('.panel.open'); }
 
-function applyRaw(raw){
-  bootErr = null;
+/* Applying a board that is not on screen must not repaint or scroll the one that
+   is — adopt() handles that, this only refreshes the chrome that names both. */
+function applyRaw(key, raw){
+  const onScreen = key === S.board;
   const y = window.scrollY;
-  adopt(raw);
-  renderChrome();
-  renderAll();
-  window.scrollTo(0, y);
-  lastSyncAt = new Date();
-  setLive('live', `Sheet re-read at ${clockOf(lastSyncAt)} · refreshes every ${Math.round(REFRESH_MS/1000)}s`);
+  adopt(key, raw);
+  if(onScreen){ bootErr = null; renderChrome(); renderAll(); window.scrollTo(0, y); }
+  renderBoards();
+}
+
+async function fetchBoard(b){
+  /* api/sheet.js answers failures with a plain-text reason. Surfacing that
+     verbatim is the difference between "it broke" and a message that names what
+     to go and fix. */
+  const opts = directId(b) ? {cache:'no-store'} : {};
+  const res = await fetch(sourceUrl(b), opts);
+  if(!res.ok){
+    const why = (await res.text().catch(()=>'')).trim().slice(0, 200);
+    throw new Error(`${b.label}: the sheet responded ${res.status}${why ? ' — ' + why : ''}`);
+  }
+  return buildData(b, await res.text());
 }
 
 async function sync(){
   if(syncing) return;
   syncing = true;
-  if(lastSyncAt === null) setLive('syncing', 'Reading the Google Sheet…');
-  try{
-    // no-store only on the direct path; the proxy is meant to be edge-cached
-    const opts = DIRECT ? {cache:'no-store'} : {};
-    /* api/sheet.js answers failures with a plain-text reason. Surfacing that
-       verbatim is the difference between "it broke" and a message that names
-       what to go and fix. */
-    const res = await fetch(sourceUrl('accounts'), opts);
-    if(!res.ok){
-      const why = (await res.text().catch(()=>'')).trim().slice(0, 200);
-      throw new Error(`the sheet responded ${res.status}${why ? ' — ' + why : ''}`);
-    }
-    const raw = buildData(await res.text());
-    const payload = fingerprint(raw);
-    if(payload === lastPayload){
-      lastSyncAt = new Date();
-      setLive('live', `No change · last checked ${clockOf(lastSyncAt)}`);
-    } else {
-      lastPayload = payload;
-      // don't yank a filter panel out from under the user mid-selection
-      if(panelOpen()){
-        pendingRaw = raw;
-        setLive('deferred', 'The sheet changed — applying as soon as this menu closes');
-      } else {
-        applyRaw(raw);
-      }
-    }
-  }catch(err){
-    console.warn('live sync failed:', err);
+  if(lastSyncAt === null) setLive('syncing', 'Reading the Google Sheets…');
+  /* each board is read and applied on its own: one sheet being unreachable must
+     not blank the other, so a rejection is recorded rather than thrown */
+  const results = await Promise.allSettled(BOARDS.map(fetchBoard));
+  let changed = false, deferred = false;
+  const errs = [];
+  results.forEach((r, i) => {
+    const b = BOARDS[i];
+    if(r.status === 'rejected'){ errs.push(r.reason && r.reason.message || String(r.reason)); return; }
+    const raw = r.value, fp = fingerprint(raw);
+    if(fp === lastPayload[b.key]) return;
+    lastPayload[b.key] = fp;
+    // don't yank a filter panel out from under the user mid-selection
+    if(panelOpen() && b.key === S.board){ pendingRaw[b.key] = raw; deferred = true; }
+    else { applyRaw(b.key, raw); changed = true; }
+  });
+  const ok = results.filter(r => r.status === 'fulfilled').length;
+  if(ok){
+    lastSyncAt = new Date(); lastErr = errs.length ? errs.join(' · ') : null;
+    const when = clockOf(lastSyncAt);
+    if(errs.length) setLive('stale', `${errs.join(' · ')} · other board read at ${when}`);
+    else if(deferred) setLive('deferred', 'A sheet changed — applying as soon as this menu closes');
+    else setLive('live', changed
+      ? `Sheets re-read at ${when} · refreshes every ${Math.round(REFRESH_MS/1000)}s`
+      : `No change · last checked ${when}`);
+  } else {
+    const why = errs.join(' · ');
+    console.warn('live sync failed:', why);
     if(lastSyncAt){
-      setLive('stale', `Could not reach the sheet · showing data from ${clockOf(lastSyncAt)}`);
+      setLive('stale', `Could not reach the sheets · showing data from ${clockOf(lastSyncAt)}`);
     } else {
       // nothing has ever loaded, so there is no earlier reading to fall back on
-      setLive('stale', `Could not reach the sheet · ${err.message}`);
-      renderBoot(true, err.message);
+      setLive('stale', `Could not reach the sheets · ${why}`);
+      renderBoot(true, why);
     }
-  }finally{ syncing = false; }
+  }
+  syncing = false;
 }
 
 /* a deferred update lands once every panel is closed */
-setInterval(()=>{ if(pendingRaw && !panelOpen()){ const r = pendingRaw; pendingRaw = null; applyRaw(r); } }, 1000);
+setInterval(()=>{
+  if(panelOpen()) return;
+  for(const k in pendingRaw){ const r = pendingRaw[k]; delete pendingRaw[k]; applyRaw(k, r); }
+}, 1000);
 setInterval(()=>{ if(!document.hidden) sync(); }, REFRESH_MS);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) sync(); });
 liveEl().addEventListener('click', sync);
-setLive('syncing', 'Reading the Google Sheet…');
+setLive('syncing', 'Reading the Google Sheets…');
 sync();
 </script>
 </body>
