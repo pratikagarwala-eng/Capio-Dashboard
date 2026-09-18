@@ -1011,6 +1011,17 @@ const isPlace = v => /^(unknown|n\/a|none|other|no history)$/i.test(String(v||''
 const clip = (s,n) => s.length > n ? s.slice(0,n-1)+'…' : s;
 let uid = 0;   /* unique ids: several bar charts coexist in one document */
 const PRI_COL = p => ({P0:'var(--p0)',P1:'var(--p1)',P2:'var(--p2)',P3:'var(--p3)'})[p] || 'var(--pu)';
+/* A bare "P0" means nothing on its own, and the card that defines the tiers is
+   not always the one being read. This is what lets the donut, the legend, the
+   table pills and the cohort chips each carry the definition where they sit. */
+const tierInfo = t => (TIERS || []).find(x => x.tier === t) || {head:'', rule:''};
+const tierTip = t => { const i = tierInfo(t);
+  return `<div class="tt-t">${esc(t)}${i.head ? ' &middot; ' + esc(i.head) : ''}</div>`
+       + (i.rule ? `<div class="tt-r">${i.rule}</div>` : ''); };
+/* every tier pill on the page explains itself on hover */
+function bindPills(root){
+  root.querySelectorAll('.pill[data-tier]').forEach(el => bindTip(el, tierTip(el.dataset.tier)));
+}
 const FAM_COL = i => `var(--fam${i%4})`;
 function rankSort(entries){ // [label,value] desc, placeholder labels pushed last
   return entries.sort((a,b)=>{ const pa=isPlace(a[0]), pb=isPlace(b[0]);
@@ -1245,7 +1256,7 @@ function donut(box, segs, opts){
   const o = Object.assign({noun:'accounts', center:'Accounts'}, opts||{});
   const tot = segs.reduce((a,b)=>a+b.value,0);
   if(!tot){ emptyBox(box); return; }
-  const W = 460, H = 236, cx = 118, cy = 118, rO = 96, rI = 62;
+  const W = 540, H = 236, cx = 112, cy = 118, rO = 96, rI = 62;
   const s = svg(W,H);
   let ang = -Math.PI/2;
   const gapA = 0.014; // ~2px surface gap between arcs, not a stroke border
@@ -1254,7 +1265,9 @@ function donut(box, segs, opts){
     const span = sg.value/tot*2*Math.PI;
     const a1 = ang + (span > gapA*2 ? gapA : 0), a2 = ang + span;
     const pe = el('path',{d:arcPath(cx,cy,rI,rO,a1,a2), fill:sg.color, 'class':'rowhit'});
-    bindTip(pe, `<div class="tt-t">${esc(sg.label)}</div><div class="tt-r"><b>${fmt(sg.value)}</b> ${o.noun} · <b>${pct(sg.value,tot)}%</b></div>`);
+    bindTip(pe, `<div class="tt-t">${esc(sg.label)}${sg.head ? ' &middot; ' + esc(sg.head) : ''}</div>`
+      + `<div class="tt-r"><b>${fmt(sg.value)}</b> ${o.noun} · <b>${pct(sg.value,tot)}%</b></div>`
+      + (sg.rule ? `<div class="tt-r" style="margin-top:5px">${sg.rule}</div>` : ''));
     if(!REDUCED){ pe.style.opacity = 0; setTimeout(()=>{ pe.style.transition='opacity .45s'; pe.style.opacity=1; },40); }
     s.appendChild(pe);
     ang += span;
@@ -1265,9 +1278,17 @@ function donut(box, segs, opts){
   const shown = segs.filter(x=>x.value);
   const step = Math.min(34, Math.floor((H-40)/Math.max(shown.length,1)));
   shown.forEach(sg=>{
-    s.appendChild(el('rect',{x:250,y:ly-10,width:11,height:11,rx:3,fill:sg.color}));
-    txt(s,{x:269,y:ly,'class':'barlabel',style:'font-size:11.5px'}, clip(sg.label,20));
-    txt(s,{x:W-4,y:ly,'text-anchor':'end','class':'barval'}, `${fmt(sg.value)} · ${pct(sg.value,tot)}%`);
+    s.appendChild(el('rect',{x:238,y:ly-10,width:11,height:11,rx:3,fill:sg.color}));
+    const lg = el('g',{'class':'rowhit'});
+    lg.appendChild(el('rect',{x:238,y:ly-13,width:W-238,height:step,fill:'transparent'}));
+    const lbl = sg.head ? `${sg.label} — ${sg.head}` : sg.label;
+    const t1 = txt(s,{x:257,y:ly,'class':'barlabel',style:'font-size:11px'}, clip(lbl,32));
+    const t2 = txt(s,{x:W-4,y:ly,'text-anchor':'end','class':'barval'}, `${fmt(sg.value)} · ${pct(sg.value,tot)}%`);
+    lg.appendChild(t1); lg.appendChild(t2);
+    bindTip(lg, `<div class="tt-t">${esc(sg.label)}${sg.head ? ' &middot; ' + esc(sg.head) : ''}</div>`
+      + `<div class="tt-r"><b>${fmt(sg.value)}</b> ${o.noun} · <b>${pct(sg.value,tot)}%</b></div>`
+      + (sg.rule ? `<div class="tt-r" style="margin-top:5px">${sg.rule}</div>` : ''));
+    s.appendChild(lg);
     ly += step;
   });
   box.appendChild(s);
@@ -1512,10 +1533,10 @@ const CARDS = [
         + `this window is available for <span class="num">${fmt(hcN)}</span> of them; accounts without history never `
         + `clear a growth threshold.`);
     }},
-  { cls:'c5', title:'Account Prioritization', desc:'Distribution across priority tiers · rules are set out in full above · P0 is hottest', tag:true,
+  { cls:'c5', title:'Account Prioritization', desc:'Distribution across priority tiers · hover any tier for the rule behind it · P0 is hottest', tag:true,
     render(box){
       const a = rows(), m = tally(a,'pri');
-      const segs = PRI_ORDER.map(p=>({label:p==='Unranked'?'Unranked':'Priority '+p,
+      const segs = PRI_ORDER.map(p=>({label:p, head:tierInfo(p).head, rule:tierInfo(p).rule,
                                       value:m.get(RX.pri[p])||0, color:PRI_COL(p)}));
       donut(box, segs, {noun:'accounts', center:'Accounts'});
       const n = a.length, top = segs[0].value + segs[1].value;
@@ -1533,7 +1554,8 @@ const CARDS = [
         const d = document.createElement('div'); d.className = 'li';
         d.innerHTML = `<span class="sw" style="background:${PRI_COL(p)}"></span>${esc(p)}`
           + `<span class="lv">${v==null?'—':v.toFixed(1)}</span>`;
-        bindTip(d, `<div class="tt-t">${esc(p)}</div><div class="tt-r">mean of <b>${v==null?'—':v.toFixed(2)}</b> signals per account</div>`);
+        bindTip(d, tierTip(p)
+          + `<div class="tt-r" style="margin-top:5px">mean of <b>${v==null?'—':v.toFixed(2)}</b> signals per account</div>`);
         leg.appendChild(d);
       });
       box.appendChild(leg);
@@ -1757,11 +1779,12 @@ const CARDS = [
             {html:strip, cls:'num'},
             {html:BOARD.hasIntent ? (x['is']||'–') : hiring, cls:'num r'},
             {html:BOARD.hasIntent ? res : wayIn},
-            {html:`<span class="pill ${L.pri[x.pri].replace(/\s/g,'')}">${esc(L.pri[x.pri])}</span>`},
+            {html:`<span class="pill ${L.pri[x.pri].replace(/\s/g,'')}" data-tier="${esc(L.pri[x.pri])}">${esc(L.pri[x.pri])}</span>`},
           ];
         }),
         `Hover any cell of a signal strip to see which signal it is; the four blocks are the four families, in the same `
         + `order as the prevalence card. Names link to the company domain, which is the identity this board keys on.`);
+      bindPills(box);
       box.querySelectorAll('.sigstrip i[data-sig]').forEach(cell=>{
         const i = +cell.dataset.sig, on = cell.dataset.on === '1';
         bindTip(cell, `<div class="tt-t">${esc(SIG[i])}</div>`
@@ -1988,6 +2011,8 @@ function condRow(g,c,gi,ci){
     FL[c.field].opts().forEach(([v,l])=>{
       const ch=document.createElement('button'); ch.type='button'; ch.className='mschip'+(sel.has(v)?' on':''); ch.textContent=l;
       ch.addEventListener('click', ()=>{ sel.has(v)?sel.delete(v):sel.add(v); c.val=[...sel]; ch.classList.toggle('on'); renderAll(); });
+      // a bare P0 chip is meaningless without the rule behind it
+      if(c.field==='priority') bindTip(ch, tierTip(v));
       chips.appendChild(ch);
     });
     row.appendChild(chips);
